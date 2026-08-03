@@ -1,0 +1,1336 @@
+﻿<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>داشبورد خودسازی</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;700;900&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Vazirmatn', sans-serif; background: #f0f2f5; padding: 20px; color: #1e293b; }
+    .container { max-width: 700px; margin: 0 auto; }
+    .card { background: #fff; border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.08); padding: 20px; margin-bottom: 20px; overflow-x: hidden; }
+    .header { background: linear-gradient(135deg, #1e40af, #3b82f6); color: #fff; border-radius: 24px; padding: 24px 28px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 16px; z-index: 100; box-shadow: 0 12px 35px rgba(30,64,175,0.25); margin-bottom: 20px; flex-wrap: wrap; gap: 8px; }
+    .header h1 { font-size: 24px; font-weight: 900; }
+    .header .header-left { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .header .score-wrap { text-align: left; }
+    .header .score-num { font-size: 36px; font-weight: 900; line-height: 1; }
+    .header .score-max { font-size: 16px; opacity: 0.8; }
+    .header .user-email { font-size: 13px; opacity: 0.85; background: rgba(255,255,255,0.15); padding: 4px 14px; border-radius: 40px; }
+    .section-title { font-size: 22px; font-weight: 900; color: #1e40af; display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 8px 4px; border-bottom: 2px solid #e2e8f0; margin-bottom: 16px; transition: 0.2s; }
+    .section-title:hover { background: #f8fafc; border-radius: 12px; padding: 8px 12px; }
+    .section-title .badge { background: #dbeafe; color: #1e40af; font-size: 14px; font-weight: 700; padding: 4px 14px; border-radius: 40px; }
+    .item { display: flex; justify-content: space-between; align-items: center; padding: 12px 8px; border-bottom: 1px solid #f1f5f9; }
+    .item:hover { background: #f8fafc; border-radius: 12px; }
+    .item label { display: flex; align-items: center; gap: 12px; cursor: pointer; width: 100%; }
+    .item input[type="checkbox"] { width: 20px; height: 20px; accent-color: #2563eb; }
+    .item .score-tag { font-size: 13px; font-weight: 700; color: #3b82f6; }
+    .item .bonus { background: #fbbf24; color: #78350f; font-size: 11px; padding: 2px 10px; border-radius: 40px; margin-right: 8px; }
+    .item .penalty { background: #fecaca; color: #991b1b; font-size: 11px; padding: 2px 10px; border-radius: 40px; margin-right: 8px; }
+    .slider-wrap { padding: 8px 4px; }
+    .slider-wrap .label-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 4px; }
+    .slider-wrap .label-row .val { font-weight: 700; color: #2563eb; }
+    input[type="range"] { width: 100%; accent-color: #2563eb; }
+    .sub-items { padding-right: 20px; margin-top: 8px; }
+    .btn { border: none; padding: 14px 32px; border-radius: 60px; font-weight: 700; font-size: 16px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.08); display: inline-block; min-width: 140px; text-align: center; }
+    .btn-green { background: #22c55e; color: #fff; }
+    .btn-green:hover { background: #16a34a; transform: translateY(-2px); }
+    .btn-blue { background: #3b82f6; color: #fff; }
+    .btn-blue:hover { background: #2563eb; transform: translateY(-2px); }
+    .btn-purple { background: #8b5cf6; color: #fff; }
+    .btn-purple:hover { background: #7c3aed; transform: translateY(-2px); }
+    .btn-red { background: #ef4444; color: #fff; }
+    .btn-red:hover { background: #dc2626; transform: translateY(-2px); }
+    .btn-google { background: #ea4335; color: #fff; }
+    .btn-google:hover { background: #d33426; }
+    .btn-sm { padding: 4px 12px; font-size: 14px; border-radius: 40px; border: none; cursor: pointer; background: #e2e8f0; transition: 0.2s; display: inline-block; }
+    .btn-sm:hover { background: #cbd5e1; }
+    .btn-wrap { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 24px; }
+    .filter-wrap { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; justify-content: center; }
+    .filter-btn { background: #e2e8f0; padding: 4px 18px; border-radius: 40px; cursor: pointer; font-size: 14px; transition: 0.2s; border: none; }
+    .filter-btn.active { background: #2563eb; color: #fff; }
+    .report-card { background: #f1f5f9; border-radius: 16px; padding: 16px 20px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px; }
+    .report-card .report-header { display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 4px; }
+    .report-card .report-details { font-size: 14px; color: #475569; }
+    .report-card .report-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .report-card .report-actions .btn-sm { padding: 4px 12px; font-size: 12px; }
+    .delete-btn { background: none; border: none; font-size: 22px; cursor: pointer; color: #94a3b8; transition: 0.2s; }
+    .delete-btn:hover { color: #ef4444; background: #fee2e2; border-radius: 40px; padding: 4px 8px; }
+    .adaye-box { background: #f1f5f9; padding: 16px; border-radius: 16px; display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 8px; }
+    .adaye-box span { font-size: 15px; }
+    .adaye-box .count { font-weight: 700; color: #2563eb; }
+    .chart-box { height: 240px; width: 100%; background: #f8fafc; border-radius: 16px; padding: 8px; margin-top: 12px; overflow: hidden; }
+    .empty { text-align: center; color: #94a3b8; padding: 32px 0; }
+    .mt-4 { margin-top: 16px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .code-box { background: #1e293b; color: #f1f5f9; padding: 16px; border-radius: 16px; font-family: 'Courier New', monospace; font-size: 13px; direction: ltr; text-align: left; overflow-x: auto; margin-top: 12px; word-break: break-all; user-select: all; cursor: text; max-height: 200px; overflow-y: auto; }
+    .copy-btn { background: #334155; color: #fff; border: none; padding: 8px 24px; border-radius: 40px; cursor: pointer; font-size: 14px; transition: 0.2s; margin-top: 8px; font-family: 'Vazirmatn', sans-serif; }
+    .copy-btn:hover { background: #475569; }
+    .copy-btn:active { transform: scale(0.95); }
+    .sleep-slot-manager { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+    .sleep-slot-item { display: flex; align-items: center; gap: 8px; background: #f8fafc; padding: 8px 12px; border-radius: 12px; flex-wrap: wrap; }
+    .sleep-slot-item input[type="time"] { border: 1px solid #e2e8f0; border-radius: 8px; padding: 4px 8px; font-family: 'Vazirmatn', sans-serif; }
+    .sleep-slot-item button { background: none; border: none; color: #ef4444; font-size: 18px; cursor: pointer; padding: 0 4px; }
+    .sleep-slot-item button:hover { color: #dc2626; }
+    .add-slot-btn { background: #e2e8f0; border: none; border-radius: 40px; padding: 6px 16px; font-size: 20px; cursor: pointer; transition: 0.2s; width: fit-content; }
+    .add-slot-btn:hover { background: #cbd5e1; }
+    .edit-mode { background: #fef9c3; border-radius: 12px; padding: 8px; margin-top: 8px; }
+    .edit-mode .item { background: #fefce8; border-bottom: 1px dashed #e2e8f0; }
+    .edit-mode .item:hover { background: #fef9c3; }
+    .order-btns { display: flex; gap: 4px; flex-wrap: wrap; }
+    .order-btns button { background: #e2e8f0; border: none; border-radius: 40px; width: 28px; height: 28px; font-size: 14px; cursor: pointer; transition: 0.2s; }
+    .order-btns button:hover { background: #cbd5e1; }
+    .order-btns button:disabled { opacity: 0.3; cursor: not-allowed; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 999; }
+    .modal { background: #fff; border-radius: 24px; padding: 24px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; }
+    .modal h3 { font-size: 20px; font-weight: 900; color: #1e40af; margin-bottom: 16px; border-right: 4px solid #3b82f6; padding-right: 12px; }
+    .modal label { display: block; margin-bottom: 8px; font-weight: 700; font-size: 14px; }
+    .modal input, .modal select { width: 100%; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 14px; font-family: 'Vazirmatn', sans-serif; margin-bottom: 12px; }
+    .modal .btn-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+    .modal .btn-row .btn-primary { background: #2563eb; color: #fff; }
+    .modal .btn-row .btn-secondary { background: #e2e8f0; color: #1e293b; }
+    .analysis-content { overflow-x: hidden; width: 100%; }
+    .login-box { max-width: 400px; margin: 60px auto; padding: 30px; text-align: center; }
+    .login-box input { width: 100%; padding: 12px; margin-bottom: 12px; border-radius: 12px; border: 1px solid #e2e8f0; font-size: 16px; font-family: 'Vazirmatn', sans-serif; }
+    .login-box h2 { color: #1e40af; margin-bottom: 20px; }
+    .login-box .error { color: #ef4444; font-size: 14px; margin-bottom: 12px; }
+    .login-box .btn-row { display: flex; gap: 8px; }
+    .login-box .btn-row .btn { flex: 1; }
+    .login-box .saved-info { background: #eef2ff; padding: 8px 12px; border-radius: 12px; margin-bottom: 12px; font-size: 14px; color: #1e40af; cursor: pointer; transition: 0.2s; }
+    .login-box .saved-info:hover { background: #dbeafe; }
+    .loading { text-align: center; padding: 50px; font-size: 18px; color: #64748b; }
+    .error-box { background: #fee2e2; border: 1px solid #ef4444; color: #991b1b; padding: 16px; border-radius: 16px; margin: 20px; text-align: center; }
+    .note-field { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 12px; font-family: 'Vazirmatn', sans-serif; font-size: 14px; resize: vertical; min-height: 80px; margin-top: 8px; }
+    .note-field:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    @media (max-width: 500px) { .grid-2 { grid-template-columns: 1fr; } .btn { min-width: 100px; padding: 10px 16px; font-size: 14px; } .sleep-slot-item { flex-wrap: wrap; } .report-card .report-actions { justify-content: flex-start; } .header { flex-direction: column; align-items: stretch; text-align: center; } .header .score-wrap { text-align: center; } .header .header-left { justify-content: center; } }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useMemo, useEffect, useRef, memo, useCallback } = React;
+
+// ============================================================
+// 🔥 Firebase Config
+// ============================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyBSt_xLWNyMKtaPSrqTPEBB3R6Oj2LgHV4",
+  authDomain: "khodsazi.firebaseapp.com",
+  projectId: "khodsazi",
+  storageBucket: "khodsazi.firebasestorage.app",
+  messagingSenderId: "856900594491",
+  appId: "1:856900594491:web:d0592d1eed8eba9eb1251e",
+  measurementId: "G-2NTVWZKBVF"
+};
+
+let auth, db;
+try {
+  firebase.initializeApp(firebaseConfig);
+  auth = firebase.auth();
+  db = firebase.firestore();
+  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
+  db.enablePersistence().catch(() => {});
+} catch (err) {
+  console.error('Firebase init error:', err);
+}
+
+// ============================================================
+// 📌 کامپوننت ورود
+// ============================================================
+const Login = ({ onLogin }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [savedEmail, setSavedEmail] = useState('');
+
+  useEffect(() => {
+    const saved = localStorage.getItem('savedLoginEmail');
+    if (saved) {
+      setSavedEmail(saved);
+      setEmail(saved);
+    }
+  }, []);
+
+  const handleLogin = async () => {
+    setLoading(true); setError('');
+    try {
+      await auth.signInWithEmailAndPassword(email, password);
+      localStorage.setItem('savedLoginEmail', email);
+      onLogin();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async () => {
+    setLoading(true); setError('');
+    try {
+      await auth.createUserWithEmailAndPassword(email, password);
+      localStorage.setItem('savedLoginEmail', email);
+      onLogin();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setLoading(true); setError('');
+    try {
+      await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+      localStorage.setItem('savedLoginEmail', email || 'google-user');
+      onLogin();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const useSavedEmail = () => {
+    if (savedEmail) {
+      setEmail(savedEmail);
+      document.getElementById('password-input')?.focus();
+    }
+  };
+
+  return (
+    <div className="login-box card">
+      <h2>🔐 ورود / ثبت‌نام</h2>
+      {savedEmail && (
+        <div className="saved-info" onClick={useSavedEmail}>
+          🔄 ورود با ایمیل قبلی: <strong>{savedEmail}</strong> (کلیک کنید)
+        </div>
+      )}
+      <input
+        type="email"
+        placeholder="ایمیل"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        disabled={loading}
+      />
+      <input
+        id="password-input"
+        type="password"
+        placeholder="رمز عبور"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        disabled={loading}
+        onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+      />
+      {error && <div className="error">{error}</div>}
+      <div className="btn-row">
+        <button className="btn btn-blue" onClick={handleLogin} disabled={loading}>ورود</button>
+        <button className="btn btn-green" onClick={handleRegister} disabled={loading}>ثبت‌نام</button>
+      </div>
+      <button className="btn btn-google" onClick={handleGoogleLogin} disabled={loading} style={{ marginTop: '12px', width: '100%' }}>🚀 ورود با گوگل</button>
+    </div>
+  );
+};
+
+// ============================================================
+// 🧠 توابع کمکی
+// ============================================================
+const handleMindDesire = (val) => { const n=Number(val); if(n>=5)return 5; if(n>=3)return 3; return 0; };
+const handleNamazShab = (val) => { const n=Number(val); if(n>=10)return 10; if(n>=5)return 5; return 0; };
+const handleNamazAval = (val) => { const n=Number(val); if(n>=15)return 15; if(n>=10)return 10; if(n>=5)return 5; return 0; };
+
+const getDefaultItems = () => ({
+  scientific: [
+    { id: 'preStudy', label: 'پیش مطالعه', type: 'checkbox', field: 'preStudy', score: 15, nature: 'normal', conditional: false },
+    { id: 'studyDailySameDay', label: 'مطالعه همان روز', type: 'slider', field: 'studyDailySameDay', min: 0, max: 30, step: 1, score: 0, nature: 'normal', conditional: false },
+    { id: 'stabilization', label: 'تثبیت مطالب', type: 'checkbox', field: 'stabilization', score: 10, nature: 'normal', conditional: false },
+    { id: 'discussion', label: 'مباحثه', type: 'toggleWithSlider', field: 'discussionOn', scoreField: 'discussionScore', min: 0, max: 30, step: 1, nature: 'normal', conditional: true },
+    { id: 'hafziat', label: 'حفظیات', type: 'slider', field: 'hafziat', min: 0, max: 15, step: 1, score: 0, nature: 'normal', conditional: false }
+  ],
+  tahzib: [
+    { id: 'lang', label: 'کنترل زبان', type: 'slider', field: 'lang', min: 0, max: 10, step: 1, score: 0, nature: 'normal', conditional: false },
+    { id: 'look', label: 'کنترل نگاه', type: 'slider', field: 'look', min: 0, max: 10, step: 1, score: 0, nature: 'normal', conditional: false },
+    { id: 'mind', label: 'کنترل ذهن', type: 'slider', field: 'mind', min: 0, max: 5, step: 1, score: 0, nature: 'normal', conditional: false, extra: '۰،۳،۵', handler: handleMindDesire },
+    { id: 'desire', label: 'نه به خواهش‌های نفسانی', type: 'slider', field: 'desire', min: 0, max: 5, step: 1, score: 0, nature: 'normal', conditional: false, extra: '۰،۳،۵', handler: handleMindDesire },
+    { id: 'namazAval', label: 'نماز اول وقت', type: 'slider', field: 'namazAval', min: 0, max: 15, step: 5, score: 0, nature: 'normal', conditional: false, extra: '۰،۵،۱۰،۱۵', handler: handleNamazAval },
+    { id: 'namazShab', label: 'نماز شب', type: 'slider', field: 'namazShab', min: 0, max: 10, step: 5, score: 0, nature: 'normal', conditional: false, extra: '۰،۵،۱۰', handler: handleNamazShab },
+    { id: 'ziyarat', label: 'زیارت عاشورا', type: 'checkbox', field: 'ziyarat', score: 5, nature: 'normal', conditional: false },
+    { id: 'sora', label: 'سوره فتح', type: 'checkbox', field: 'sora', score: 5, nature: 'normal', conditional: false },
+    { id: 'tasbihat', label: 'تسبیحات اربعه', type: 'checkbox', field: 'tasbihat', score: 5, nature: 'normal', conditional: false },
+    { id: 'eghame', label: 'اقامه', type: 'checkbox', field: 'eghame', score: 5, nature: 'normal', conditional: false },
+    { id: 'azan', label: 'پوشیدن عبا', type: 'checkbox', field: 'azan', score: 5, nature: 'normal', conditional: false },
+    { id: 'akhlaq', label: 'اخلاق', type: 'checkbox', field: 'akhlaq', score: 5, nature: 'bonus', conditional: false },
+    { id: 'mohasebeNafs', label: 'محاسبه نفس', type: 'checkbox', field: 'mohasebeNafs', score: 10, nature: 'normal', conditional: false },
+    { id: 'wajebatOff', label: 'انجام ندادن واجبات', type: 'checkbox', field: 'wajebatOff', score: -20, nature: 'penalty', conditional: false },
+    { id: 'adayeDin', label: 'ادای دِین (۱۰ امتیاز)', type: 'adayeDin', field: 'adayeDinOn', nature: 'normal', conditional: false }
+  ],
+  basirat: [
+    { id: 'motaleah', label: 'مطالعه بصیرتی', type: 'slider', field: 'motaleah', min: 0, max: 20, step: 1, score: 0, nature: 'normal', conditional: false },
+    { id: 'socialPresence', label: '۱) حضور در اجتماع', type: 'checkbox', field: 'socialPresence', score: 10, nature: 'normal', conditional: false },
+    { id: 'socialPages', label: '۲) فعالیت در صفحات مجازی', type: 'checkbox', field: 'socialPages', score: 5, nature: 'normal', conditional: false },
+    { id: 'socialPost', label: '۳) پست در صفحات مجازی', type: 'checkbox', field: 'socialPost', score: 5, nature: 'normal', conditional: false },
+    { id: 'goal', label: 'هدف‌گذاری', type: 'checkbox', field: 'goal', score: 10, nature: 'normal', conditional: false },
+    { id: 'leadershipSpeech', label: 'تحلیل سخنان رهبری', type: 'checkbox', field: 'leadershipSpeech', score: 10, nature: 'normal', conditional: false }
+  ],
+  organization: [
+    { id: 'sleepQuality', label: 'کیفیت خواب', type: 'slider', field: 'sleepQuality', min: 0, max: 10, step: 1, score: 0, nature: 'normal', conditional: false },
+    { id: 'phoneOrder', label: 'نظم در استفاده از گوشی', type: 'slider', field: 'phoneOrder', min: 0, max: 10, step: 1, score: 0, nature: 'normal', conditional: false },
+    { id: 'sports', label: 'ورزش', type: 'slider', field: 'sports', min: 0, max: 10, step: 1, score: 0, nature: 'normal', conditional: false },
+    { id: 'brush', label: 'مسواک', type: 'checkbox', field: 'brush', score: 10, nature: 'normal', conditional: false },
+    { id: 'profession', label: 'یادگیری حرفه', type: 'toggleWithSlider', field: 'professionOn', scoreField: 'professionScore', min: 0, max: 10, step: 1, nature: 'normal', conditional: true }
+  ]
+});
+
+let idCounter = 1000;
+const genId = () => `item_${idCounter++}`;
+
+const mergeItems = (defaultItems, savedItems) => {
+  if (!savedItems || Object.keys(savedItems).length === 0) return defaultItems;
+  const result = {};
+  Object.keys(defaultItems).forEach(section => {
+    const defaultSection = defaultItems[section] || [];
+    const savedSection = savedItems[section] || [];
+    const savedMap = {};
+    savedSection.forEach(item => { if (item.id) savedMap[item.id] = item; });
+    const merged = defaultSection.map(defaultItem => {
+      const savedItem = savedMap[defaultItem.id];
+      return savedItem ? { ...defaultItem, ...savedItem } : { ...defaultItem };
+    });
+    const extraItems = savedSection.filter(item => !defaultSection.some(d => d.id === item.id));
+    result[section] = [...merged, ...extraItems];
+  });
+  return result;
+};
+
+// ============================================================
+// 🧮 توابع محاسبه امتیاز
+// ============================================================
+const calcSectionScore = (state, items) => {
+  let score = 0, max = 0;
+  const getVal = (field) => state[field] || 0;
+  items.forEach(item => {
+    if (item.type === 'checkbox') {
+      if (state[item.field]) score += item.score;
+      if (item.nature === 'normal' && (!item.conditional || state[item.field])) max += item.score;
+    } else if (item.type === 'toggleWithCheckbox') {
+      if (state[item.field]) {
+        if (item.nature === 'normal') max += item.score;
+        if (state[item.scoreField]) score += item.score;
+      }
+    } else if (item.type === 'slider') {
+      score += getVal(item.field);
+      if (item.nature === 'normal' && (!item.conditional || state[item.field])) max += item.max || 0;
+    } else if (item.type === 'toggleWithSlider') {
+      if (state[item.field]) { const val = getVal(item.scoreField); score += val; if (item.nature === 'normal') max += item.max || 0; }
+    } else if (item.type === 'adayeDin') {
+      if (state[item.field]) { const any = state.namazSobh || state.namazZohr || state.namazAsr || state.namazMaghreb || state.namazEsha || state.rooze; if (any) score += 10; }
+      if (item.nature === 'normal' && (!item.conditional || state[item.field])) max += 10;
+    }
+  });
+  return { score, max };
+};
+
+const calcScientificScore = (state, items) => calcSectionScore(state, items);
+const calcTahzibScore = (state, items) => calcSectionScore(state, items);
+const calcBasiratScore = (state, items) => calcSectionScore(state, items);
+const calcOrganizationScore = (state, items) => calcSectionScore(state, items);
+const calcTotalMax = (s, t, b, o) => s.max + t.max + b.max + o.max;
+
+// ============================================================
+// 🔑 تولید کد رمزی
+// ============================================================
+const generateCode = (state) => {
+  const s = state;
+  const sci = `S${s.preStudy?15:0}T${s.studyDailySameDay}D${s.stabilization?10:0}M${s.discussionOn?1:0}_${s.discussionScore}H${s.hafziat}`;
+  const tah = `L${s.lang}Lk${s.look}M${s.mind}D${s.desire}N${s.namazAval}N${s.namazShab}Z${s.ziyarat?1:0}S${s.sora?1:0}T${s.tasbihat?1:0}E${s.eghame?1:0}A${s.azan?1:0}K${s.akhlaq?1:0}Mh${s.mohasebeNafs?1:0}W${s.wajebatOff?1:0}`;
+  const ad = `Ad${s.adayeDinOn?1:0}${s.namazSobh?1:0}${s.namazZohr?1:0}${s.namazAsr?1:0}${s.namazMaghreb?1:0}${s.namazEsha?1:0}${s.rooze?1:0}`;
+  const bas = `B${s.motaleah}P${s.socialPresence?1:0}G${s.socialPages?1:0}Ps${s.socialPost?1:0}Gd${s.goal?1:0}Ld${s.leadershipSpeech?1:0}`;
+  const profScore = s.professionOn ? s.professionScore : 0;
+  const sleepSlots = s.sleepSlots || [];
+  const sleepStr = sleepSlots.length === 0 ? '0' : sleepSlots.map(t => `${t.sleep.replace(':','')}-${t.wake.replace(':','')}`).join('_');
+  const org = `O${s.sports || 0}R${s.sleepQuality}Q${s.phoneOrder}Pr${s.professionOn?1:0}_${profScore}Br${s.brush?1:0}Sl${sleepStr}`;
+
+  const sections = ['scientific', 'tahzib', 'basirat', 'organization'];
+  const customItems = [];
+  sections.forEach(section => {
+    const items = s.items?.[section] || [];
+    items.forEach(item => {
+      if (item.id && item.id.startsWith('item_')) {
+        let fieldValue = 0, scoreValue = 0;
+        if (item.type === 'checkbox') { fieldValue = s[item.field] ? 1 : 0; scoreValue = fieldValue; }
+        else if (item.type === 'slider') { fieldValue = s[item.field] || 0; scoreValue = fieldValue; }
+        else if (item.type === 'toggleWithCheckbox') { fieldValue = s[item.field] ? 1 : 0; scoreValue = s[item.scoreField] ? 1 : 0; }
+        else if (item.type === 'toggleWithSlider') { fieldValue = s[item.field] ? 1 : 0; scoreValue = s[item.scoreField] || 0; }
+        customItems.push({ section, ...item, fieldValue, scoreValue });
+      }
+    });
+  });
+
+  let customStr = '';
+  if (customItems.length > 0) {
+    const encoded = customItems.map(item => {
+      const parts = [item.section, item.type || '', item.field || '', item.scoreField || '', item.score || 0, item.max || 0, item.nature || 'normal', item.conditional ? '1' : '0', item.label || '', item.fieldValue, item.scoreValue];
+      return parts.join(':');
+    }).join(';');
+    customStr = `C${encoded}`;
+  }
+  const noteStr = s.note ? `N${encodeURIComponent(s.note)}` : '';
+  return `${sci}|${tah}|${ad}|${bas}|${org}|${customStr}|${noteStr}`;
+};
+
+// ============================================================
+// 🔓 رمزگشایی کد رمزی (عکس generateCode)
+// ============================================================
+const parseCode = (rawCode) => {
+  const code = (rawCode || '').trim();
+  if (!code) throw new Error('کد رمزی خالی است.');
+  const parts = code.split('|');
+  if (parts.length < 5) throw new Error('فرمت کد رمزی نامعتبر است (تعداد بخش‌ها کم است).');
+  const [sciStr, tahStr, adStr, basStr, orgStr, customStr = '', noteStr = ''] = parts;
+  const result = { ...getDefaultState() };
+
+  let m = sciStr.match(/^S(\d+)T(\d+)D(\d+)M(\d)_(\d+)H(\d+)$/);
+  if (!m) throw new Error('بخش «علمی» کد رمزی نامعتبر است.');
+  result.preStudy = m[1] === '15';
+  result.studyDailySameDay = parseInt(m[2], 10) || 0;
+  result.stabilization = m[3] === '10';
+  result.discussionOn = m[4] === '1';
+  result.discussionScore = parseInt(m[5], 10) || 0;
+  result.hafziat = parseInt(m[6], 10) || 0;
+
+  m = tahStr.match(/^L(\d+)Lk(\d+)M(\d+)D(\d+)N(\d+)N(\d+)Z(\d)S(\d)T(\d)E(\d)A(\d)K(\d)Mh(\d)W(\d)$/);
+  if (!m) throw new Error('بخش «تهذیب» کد رمزی نامعتبر است.');
+  result.lang = parseInt(m[1], 10) || 0;
+  result.look = parseInt(m[2], 10) || 0;
+  result.mind = parseInt(m[3], 10) || 0;
+  result.desire = parseInt(m[4], 10) || 0;
+  result.namazAval = parseInt(m[5], 10) || 0;
+  result.namazShab = parseInt(m[6], 10) || 0;
+  result.ziyarat = m[7] === '1';
+  result.sora = m[8] === '1';
+  result.tasbihat = m[9] === '1';
+  result.eghame = m[10] === '1';
+  result.azan = m[11] === '1';
+  result.akhlaq = m[12] === '1';
+  result.mohasebeNafs = m[13] === '1';
+  result.wajebatOff = m[14] === '1';
+
+  m = adStr.match(/^Ad(\d)(\d)(\d)(\d)(\d)(\d)(\d)$/);
+  if (!m) throw new Error('بخش «ادای دین» کد رمزی نامعتبر است.');
+  result.adayeDinOn = m[1] === '1';
+  result.namazSobh = m[2] === '1';
+  result.namazZohr = m[3] === '1';
+  result.namazAsr = m[4] === '1';
+  result.namazMaghreb = m[5] === '1';
+  result.namazEsha = m[6] === '1';
+  result.rooze = m[7] === '1';
+
+  m = basStr.match(/^B(\d+)P(\d)G(\d)Ps(\d)Gd(\d)Ld(\d)$/);
+  if (!m) throw new Error('بخش «بصیرت» کد رمزی نامعتبر است.');
+  result.motaleah = parseInt(m[1], 10) || 0;
+  result.socialPresence = m[2] === '1';
+  result.socialPages = m[3] === '1';
+  result.socialPost = m[4] === '1';
+  result.goal = m[5] === '1';
+  result.leadershipSpeech = m[6] === '1';
+
+  m = orgStr.match(/^O(\d+)R(\d+)Q(\d+)Pr(\d)_(\d+)Br(\d)Sl(.+)$/);
+  if (!m) throw new Error('بخش «نظم زندگی» کد رمزی نامعتبر است.');
+  result.sports = parseInt(m[1], 10) || 0;
+  result.sleepQuality = parseInt(m[2], 10) || 0;
+  result.phoneOrder = parseInt(m[3], 10) || 0;
+  result.professionOn = m[4] === '1';
+  result.professionScore = parseInt(m[5], 10) || 0;
+  result.brush = m[6] === '1';
+  const sleepRaw = m[7];
+  if (sleepRaw && sleepRaw !== '0') {
+    result.sleepSlots = sleepRaw.split('_').map(pair => {
+      const [sleepT, wakeT] = pair.split('-');
+      const fmt = (t) => (t && t.length === 4) ? `${t.slice(0, 2)}:${t.slice(2, 4)}` : '00:00';
+      return { sleep: fmt(sleepT), wake: fmt(wakeT) };
+    });
+  } else {
+    result.sleepSlots = [{ sleep: '23:00', wake: '07:00' }];
+  }
+
+  result.items = getDefaultItems();
+  if (customStr && customStr.startsWith('C')) {
+    const encoded = customStr.slice(1);
+    encoded.split(';').filter(Boolean).forEach(itemPart => {
+      const p = itemPart.split(':');
+      if (p.length < 11) return;
+      const [section, type, field, scoreField, score, max, nature, conditional, label, fieldValue, scoreValue] = p;
+      if (!result.items[section]) result.items[section] = [];
+      result.items[section].push({
+        id: genId(), label, type,
+        field: field || undefined,
+        scoreField: scoreField || undefined,
+        score: parseInt(score, 10) || 0,
+        max: parseInt(max, 10) || 0,
+        nature: nature || 'normal',
+        conditional: conditional === '1'
+      });
+      if (type === 'checkbox') {
+        result[field] = fieldValue === '1';
+      } else if (type === 'slider') {
+        result[field] = parseInt(fieldValue, 10) || 0;
+      } else if (type === 'toggleWithCheckbox') {
+        result[field] = fieldValue === '1';
+        if (scoreField) result[scoreField] = scoreValue === '1';
+      } else if (type === 'toggleWithSlider') {
+        result[field] = fieldValue === '1';
+        if (scoreField) result[scoreField] = parseInt(scoreValue, 10) || 0;
+      }
+    });
+  }
+
+  result.note = '';
+  if (noteStr && noteStr.startsWith('N')) {
+    try { result.note = decodeURIComponent(noteStr.slice(1)); } catch (e) { result.note = ''; }
+  }
+
+  return result;
+};
+
+const createNewItem = (formData) => {
+  const isConditional = formData.type === 'toggleWithSlider' || formData.type === 'toggleWithCheckbox';
+  const base = { id: genId(), label: formData.label, type: formData.type, nature: formData.nature, conditional: isConditional };
+  if (formData.type === 'checkbox' || formData.type === 'toggleWithCheckbox') {
+    return { ...base, field: formData.field, score: parseInt(formData.score) || 0, scoreField: formData.type === 'toggleWithCheckbox' ? formData.scoreField : undefined };
+  } else if (formData.type === 'slider') {
+    return { ...base, field: formData.field, min: 0, max: parseInt(formData.maxScore) || 10, step: 1, score: 0 };
+  } else {
+    return { ...base, field: formData.field, scoreField: formData.scoreField, min: 0, max: parseInt(formData.maxScore) || 10, step: 1 };
+  }
+};
+
+function getDefaultState() {
+  return {
+    preStudy:false, studyDailySameDay:0, stabilization:false, discussionOn:false, discussionScore:0, hafziat:0,
+    lang:0, look:0, mind:0, desire:0, namazAval:0, namazShab:0, ziyarat:false, sora:false, tasbihat:false,
+    eghame:false, azan:false, akhlaq:false, mohasebeNafs:false, wajebatOff:false,
+    adayeDinOn:false, namazSobh:false, namazZohr:false, namazAsr:false, namazMaghreb:false, namazEsha:false, rooze:false,
+    motaleah:0, socialPresence:false, socialPages:false, socialPost:false, goal:false, leadershipSpeech:false,
+    sports:0, sleepQuality:5, phoneOrder:5, professionOn:false, professionScore:0, brush:false,
+    sleepSlots:[{ sleep: '23:00', wake: '07:00' }],
+    items: getDefaultItems(),
+    note: ''
+  };
+}
+
+const extractDay = (d) => { if(!d)return ''; const p=d.split(/[\/ :]/); return p.length>=3 ? p[2] : d; };
+
+const drawLine = (canvas, data, keys, colors, isPercent=false) => {
+  if(!canvas||!data||data.length===0)return;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  const pad={top:20,bottom:30,left:40,right:20};
+  const cw=W-pad.left-pad.right, ch=H-pad.top-pad.bottom;
+  let max=0; data.forEach(d=>{keys.forEach(k=>{if(d[k]>max)max=d[k];});});
+  if(isPercent) max=100; else max=Math.max(max,10);
+  ctx.strokeStyle='#e2e8f0'; ctx.lineWidth=0.5;
+  for(let i=0;i<=4;i++){ const y=pad.top+ch-(i/4)*ch; ctx.beginPath(); ctx.moveTo(pad.left,y); ctx.lineTo(W-pad.right,y); ctx.stroke(); ctx.fillStyle='#64748b'; ctx.font='10px Vazirmatn'; ctx.textAlign='right'; const v=Math.round((i/4)*max); ctx.fillText(isPercent?v+'%':v, pad.left-5, y+3); }
+  keys.forEach((key,idx)=>{
+    const color=colors[idx%colors.length];
+    ctx.strokeStyle=color; ctx.lineWidth=2.5; ctx.beginPath(); let first=true;
+    data.forEach((d,i)=>{ const x=pad.left+(i/(data.length-1||1))*cw; const y=pad.top+ch-(d[key]/max)*ch; if(first){ctx.moveTo(x,y); first=false;}else ctx.lineTo(x,y); });
+    ctx.stroke();
+    data.forEach((d,i)=>{ const x=pad.left+(i/(data.length-1||1))*cw; const y=pad.top+ch-(d[key]/max)*ch; ctx.beginPath(); ctx.arc(x,y,5,0,2*Math.PI); ctx.fillStyle=color; ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke(); });
+  });
+  ctx.fillStyle='#64748b'; ctx.font='10px Vazirmatn'; ctx.textAlign='center';
+  data.forEach((d,i)=>{ const x=pad.left+(i/(data.length-1||1))*cw; ctx.fillText(extractDay(d.date), x, H-5); });
+  let lx=W-60, ly=10;
+  keys.forEach((key,idx)=>{ ctx.fillStyle=colors[idx%colors.length]; ctx.fillRect(lx,ly,12,12); ctx.fillStyle='#1e293b'; ctx.font='9px Vazirmatn'; ctx.textAlign='left'; ctx.fillText(key, lx+18, ly+10); ly+=20; });
+};
+
+// ============================================================
+// 📦 کامپوننت‌های UI
+// ============================================================
+const CheckboxItem = memo(({ label, score, checked, onChange, bonus, penalty }) => (
+  <div className="item"><label><input type="checkbox" checked={checked} onChange={onChange} /> {label} {bonus && <span className="bonus">تشویقی</span>}{penalty && <span className="penalty">منفی</span>}</label><span className="score-tag">{score >= 0 ? '+' : ''}{score}</span></div>
+));
+
+const SliderItem = memo(({ label, min, max, step, val, onChange, extra, nature }) => (
+  <div className="slider-wrap"><div className="label-row"><span>{label} {nature === 'bonus' && <span className="bonus" style={{marginRight:'8px'}}>تشویقی</span>}{nature === 'penalty' && <span className="penalty" style={{marginRight:'8px'}}>منفی</span>}{extra && <span className="text-sm text-indigo-500" style={{marginRight:'4px'}}>({extra})</span>}</span><span className="val">{val}</span></div><input type="range" min={min} max={max} step={step} value={val} onChange={onChange} /></div>
+));
+
+const SleepSlotManager = ({ slots, onChange }) => {
+  const addSlot = () => { if (slots.length >= 3) return; onChange([...slots, { sleep: '13:00', wake: '14:00' }]); };
+  const removeSlot = (index) => { if (slots.length <= 1) return; onChange(slots.filter((_, i) => i !== index)); };
+  const updateSlot = (index, field, value) => { const newSlots = [...slots]; newSlots[index][field] = value; onChange(newSlots); };
+  return (
+    <div className="sleep-slot-manager">
+      {slots.map((item, index) => (
+        <div key={index} className="sleep-slot-item">
+          <input type="time" value={item.sleep} onChange={(e) => updateSlot(index, 'sleep', e.target.value)} />
+          <span> → </span>
+          <input type="time" value={item.wake} onChange={(e) => updateSlot(index, 'wake', e.target.value)} />
+          {index > 0 && <button onClick={() => removeSlot(index)}>✖</button>}
+        </div>
+      ))}
+      {slots.length < 3 && <button className="add-slot-btn" onClick={addSlot}>➕</button>}
+    </div>
+  );
+};
+
+const Section = memo(({ id, title, score, max, children, open, onToggle }) => (
+  <div className="card">
+    <div className="section-title" onClick={onToggle}>
+      <span>{title}</span>
+      <span className="badge">{score} از {max}</span>
+    </div>
+    {open[id] && <div>{children}</div>}
+  </div>
+));
+
+const AddItemModal = ({ isOpen, onClose, onAdd }) => {
+  const [form, setForm] = useState({ label: '', type: 'checkbox', score: '5', maxScore: '10', nature: 'normal' });
+  useEffect(() => { if (isOpen) setForm({ label: '', type: 'checkbox', score: '5', maxScore: '10', nature: 'normal' }); }, [isOpen]);
+  if (!isOpen) return null;
+  const handleSubmit = () => {
+    if (!form.label.trim()) { alert('لطفاً عنوان را وارد کنید.'); return; }
+    const field = `custom_${Date.now()}`;
+    const scoreField = `customScore_${Date.now()}`;
+    let item;
+    if (form.type === 'checkbox' || form.type === 'toggleWithCheckbox') {
+      item = createNewItem({ ...form, field, score: form.score, scoreField });
+    } else {
+      item = createNewItem({ ...form, field, scoreField, maxScore: form.maxScore });
+    }
+    onAdd(item, field, scoreField);
+    onClose();
+  };
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <h3>➕ افزودن وظیفه جدید</h3>
+        <label>عنوان</label><input type="text" value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} placeholder="مثلاً: مطالعه قرآن" />
+        <label>نوع امتیازدهی</label>
+        <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+          <option value="checkbox">تیک‌زدنی (ثابت)</option>
+          <option value="slider">نوار (متغیر)</option>
+          <option value="toggleWithSlider">مشروط (فعال/غیرفعال + نوار)</option>
+          <option value="toggleWithCheckbox">مشروط (فعال/غیرفعال + تیک‌زدنی)</option>
+        </select>
+        {form.type === 'checkbox' || form.type === 'toggleWithCheckbox' ? (
+          <><label>امتیاز</label><input type="number" value={form.score} onChange={(e) => setForm({ ...form, score: e.target.value })} /></>
+        ) : (
+          <><label>حداکثر امتیاز (نوار)</label><input type="number" value={form.maxScore} onChange={(e) => setForm({ ...form, maxScore: e.target.value })} /></>
+        )}
+        <label>ماهیت</label>
+        <select value={form.nature} onChange={(e) => setForm({ ...form, nature: e.target.value })}>
+          <option value="normal">عادی</option><option value="bonus">تشویقی</option><option value="penalty">منفی</option>
+        </select>
+        <div className="btn-row"><button className="btn-secondary" onClick={onClose}>لغو</button><button className="btn-primary" onClick={handleSubmit}>افزودن</button></div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================
+// 🔑 مودال نمایش و کپی کد رمزی
+// ============================================================
+const CodeModal = ({ isOpen, code, date, onClose }) => {
+  const [copied, setCopied] = useState(false);
+  useEffect(() => { if (isOpen) setCopied(false); }, [isOpen]);
+  if (!isOpen) return null;
+
+  const handleCopy = async () => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(code);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = code;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus(); ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (e) {
+      alert('کپی خودکار ممکن نشد. لطفاً متن کد را به‌صورت دستی انتخاب و کپی کنید.');
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <h3>🔑 کد رمزی گزارش {date}</h3>
+        <div className="code-box">{code}</div>
+        <button className="copy-btn" onClick={handleCopy}>{copied ? '✅ کپی شد' : '📋 کپی کد'}</button>
+        <div className="btn-row"><button className="btn-secondary" onClick={onClose}>بستن</button></div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================
+// 📥 مودال وارد کردن گزارش از روی کد رمزی
+// ============================================================
+const ImportCodeModal = ({ isOpen, onClose, onImport }) => {
+  const [code, setCode] = useState('');
+  const [date, setDate] = useState('');
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { if (isOpen) { setCode(''); setDate(''); setBusy(false); } }, [isOpen]);
+  if (!isOpen) return null;
+
+  const handleSubmit = async () => {
+    if (!code.trim()) { alert('لطفاً کد رمزی را وارد کنید.'); return; }
+    if (!date) { alert('لطفاً تاریخ این گزارش را انتخاب کنید.'); return; }
+    setBusy(true);
+    const ok = await onImport(code.trim(), date);
+    setBusy(false);
+    if (ok) onClose();
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <h3>📥 وارد کردن گزارش با کد رمزی</h3>
+        <label>کد رمزی</label>
+        <textarea
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          placeholder="کد رمزی را اینجا جای‌گذاری (Paste) کنید..."
+          style={{ width: '100%', minHeight: '90px', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '12px', fontFamily: "'Courier New', monospace", fontSize: '12px', direction: 'ltr', textAlign: 'left', marginBottom: '12px' }}
+          disabled={busy}
+        />
+        <label>این گزارش برای چه تاریخی است؟</label>
+        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} disabled={busy} />
+        <p style={{ fontSize: '12px', color: '#64748b', marginTop: '-4px', marginBottom: '12px' }}>
+          گزارش با این تاریخ در فهرست گزارش‌ها و نمودارهای تحلیل، در جای درست و به‌ترتیب زمانی خودش قرار می‌گیرد.
+        </p>
+        <div className="btn-row">
+          <button className="btn-secondary" onClick={onClose} disabled={busy}>لغو</button>
+          <button className="btn-primary" onClick={handleSubmit} disabled={busy}>{busy ? 'در حال ثبت...' : 'ثبت گزارش'}</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================
+// 🚀 کامپوننت اصلی
+// ============================================================
+const App = () => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [state, setState] = useState(() => getDefaultState());
+  const [reports, setReports] = useState([]);
+  const [dataLoaded, setDataLoaded] = useState(false);
+  const [editingReportId, setEditingReportId] = useState(null);
+  const [saveStatus, setSaveStatus] = useState('idle'); // idle | saving | saved | error
+  const pendingSaveRef = useRef(false);
+
+  const saveToFirestore = useCallback(async (userId, newState, newReports, { silent = false } = {}) => {
+    if (!userId || !db) return false;
+    setSaveStatus('saving');
+    pendingSaveRef.current = true;
+    try {
+      localStorage.setItem('khodsazi_backup_' + userId, JSON.stringify({ state: newState, reports: newReports, ts: Date.now() }));
+    } catch (e) { /* پر بودن حافظه یا حالت خصوصی مرورگر - مشکلی نیست */ }
+    try {
+      await db.collection('users').doc(userId).set({ state: newState, reports: newReports, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      pendingSaveRef.current = false;
+      setSaveStatus('saved');
+      return true;
+    } catch (err) {
+      console.error('Save error:', err);
+      pendingSaveRef.current = false;
+      setSaveStatus('error');
+      if (!silent) alert('❌ ذخیره اطلاعات ناموفق بود!\n\nاتصال اینترنت خود را بررسی کنید و دوباره تلاش کنید. اطلاعات شما فعلاً فقط به‌صورت موقت روی همین دستگاه نگه‌داری شده و ممکن است در صورت بستن صفحه از بین برود.');
+      return false;
+    }
+  }, []);
+
+  useEffect(() => {
+    const warn = (e) => { if (pendingSaveRef.current) { e.preventDefault(); e.returnValue = ''; return ''; } };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, []);
+
+  useEffect(() => {
+    if (!auth) { setError('Firebase مقداردهی نشد.'); setLoading(false); return; }
+    const timeout = setTimeout(() => setLoading(false), 5000);
+    const unsubscribe = auth.onAuthStateChanged(
+      (u) => { setUser(u); setLoading(false); clearTimeout(timeout); if (u) setDataLoaded(true); },
+      (err) => { setError(err.message); setLoading(false); clearTimeout(timeout); }
+    );
+    return () => { unsubscribe(); clearTimeout(timeout); };
+  }, []);
+
+  useEffect(() => {
+    if (!user || !db) return;
+    const unsubscribe = db.collection('users').doc(user.uid).onSnapshot((doc) => {
+      let cloudReportCount = 0;
+      if (doc.exists) {
+        const data = doc.data();
+        cloudReportCount = (data.reports || []).length;
+        if (data.state) {
+          const defaultState = getDefaultState();
+          const mergedItems = mergeItems(defaultState.items, data.state.items);
+          setState({ ...defaultState, ...data.state, items: mergedItems, sleepSlots: data.state.sleepSlots || [{ sleep: '23:00', wake: '07:00' }], note: data.state.note || '' });
+        }
+        if (data.reports) setReports(data.reports);
+      } else {
+        const defaultState = getDefaultState();
+        setState(defaultState); setReports([]);
+        saveToFirestore(user.uid, defaultState, [], { silent: true });
+      }
+
+      // بررسی نسخه پشتیبان محلی: اگر تعداد گزارش‌های محلی بیشتر از ابر باشد یعنی یک بار ذخیره روی ابر ناموفق بوده
+      try {
+        const backupRaw = localStorage.getItem('khodsazi_backup_' + user.uid);
+        if (backupRaw) {
+          const backup = JSON.parse(backupRaw);
+          const backupReportCount = (backup.reports || []).length;
+          if (backupReportCount > cloudReportCount) {
+            if (window.confirm(`⚠️ یک نسخه پشتیبان محلی روی این دستگاه پیدا شد که ${backupReportCount} گزارش دارد، در حالی که نسخه ذخیره‌شده در ابر فقط ${cloudReportCount} گزارش دارد.\n\nظاهراً یک ذخیره‌سازی قبلی ناقص مانده است. آیا می‌خواهید نسخه محلی (کامل‌تر) بازیابی و جایگزین شود؟`)) {
+              setState(backup.state);
+              setReports(backup.reports);
+              saveToFirestore(user.uid, backup.state, backup.reports);
+            }
+          }
+        }
+      } catch (e) { /* نادیده گرفتن خطای بازیابی نسخه پشتیبان */ }
+
+      setDataLoaded(true);
+    }, (err) => { setError(err.message); });
+    return () => unsubscribe();
+  }, [user, saveToFirestore]);
+
+  useEffect(() => {
+    if (!user || !dataLoaded || !db) return;
+    const timeout = setTimeout(() => { saveToFirestore(user.uid, state, reports, { silent: true }); }, 500);
+    return () => clearTimeout(timeout);
+  }, [state, reports, user, dataLoaded, saveToFirestore]);
+
+  const update = useCallback((k, v) => setState(p => ({ ...p, [k]: v })), []);
+  const [open, setOpen] = useState({ scientific: false, tahzib: false, basirat: false, organization: false });
+  const toggle = useCallback((s) => setOpen(p => ({ ...p, [s]: !p[s] })), []);
+  const [editMode, setEditMode] = useState({ scientific: false, tahzib: false, basirat: false, organization: false });
+  const toggleEdit = useCallback((section) => setEditMode(p => ({ ...p, [section]: !p[section] })), []);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addTarget, setAddTarget] = useState(null);
+  const openAddModal = useCallback((section) => { setAddTarget(section); setShowAddModal(true); }, []);
+  const handleAddItem = useCallback((item, field, scoreField) => {
+    if (!addTarget) return;
+    const items = [...state.items[addTarget], item];
+    update('items', { ...state.items, [addTarget]: items });
+    if (item.type === 'checkbox' || item.type === 'toggleWithCheckbox') {
+      update(field, false);
+      if (item.type === 'toggleWithCheckbox') update(scoreField, false);
+    } else if (item.type === 'slider') { update(field, 0); }
+    else { update(field, false); update(scoreField, 0); }
+  }, [addTarget, state.items, update]);
+
+  const moveItem = useCallback((section, index, direction) => {
+    const items = [...state.items[section]];
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= items.length) return;
+    [items[index], items[newIndex]] = [items[newIndex], items[index]];
+    update('items', { ...state.items, [section]: items });
+  }, [state.items, update]);
+
+  const deleteItem = useCallback((section, index, itemId) => {
+    const item = state.items[section][index];
+    if (!item) return;
+    if (window.confirm(`آیا از حذف "${item.label}" مطمئن هستید؟`)) {
+      const items = state.items[section].filter((_, i) => i !== index);
+      update('items', { ...state.items, [section]: items });
+    }
+  }, [state.items, update]);
+
+  const clearAllData = async () => {
+    if (reports.length === 0) { alert('هیچ داده‌ای برای حذف وجود ندارد.'); return; }
+    if (!window.confirm('⚠️ آیا از حذف تمام گزارش‌ها مطمئن هستید؟')) return;
+    if (!window.confirm('❗ این عمل غیرقابل بازگشت است! آیا باز هم مطمئن هستید؟')) return;
+    setReports([]);
+    const ok = await saveToFirestore(user.uid, state, []);
+    if (ok) alert('✅ تمام داده‌ها با موفقیت حذف شدند.');
+  };
+
+  const scientific = useMemo(() => calcScientificScore(state, state.items.scientific), [state]);
+  const tahzib = useMemo(() => calcTahzibScore(state, state.items.tahzib), [state]);
+  const basirat = useMemo(() => calcBasiratScore(state, state.items.basirat), [state]);
+  const organization = useMemo(() => calcOrganizationScore(state, state.items.organization), [state]);
+  const total = scientific.score + tahzib.score + basirat.score + organization.score;
+  const totalMax = calcTotalMax(scientific, tahzib, basirat, organization);
+
+  // ============================================================
+  // 📝 توابع مربوط به گزارش‌ها
+  // ============================================================
+  const sortReportsDesc = (list) => [...list].sort((a, b) => (b.dateValue || b.id) - (a.dateValue || a.id));
+
+  // مرتب‌سازی گزارش‌ها برای نمایش، جدول تحلیل و نمودارها بر اساس تاریخ واقعی گزارش (نه زمان ثبت آن)
+  const sortedReports = useMemo(() => sortReportsDesc(reports), [reports]);
+
+  const saveReport = async () => {
+    const todayObj = new Date();
+    const today = todayObj.toLocaleDateString('fa-IR');
+    const todayValue = new Date(todayObj.getFullYear(), todayObj.getMonth(), todayObj.getDate()).getTime();
+    const existingIndex = reports.findIndex(r => r.date === today);
+
+    if (editingReportId) {
+      const editIndex = reports.findIndex(r => r.id === editingReportId);
+      if (editIndex !== -1) {
+        const updatedReport = {
+          ...reports[editIndex],
+          totalScore: total,
+          sections: {
+            scientific: { score: scientific.score, max: scientific.max },
+            tahzib: { score: tahzib.score, max: tahzib.max },
+            basirat: { score: basirat.score, max: basirat.max },
+            organization: { score: organization.score, max: organization.max }
+          },
+          details: {
+            ...state,
+            adayeDin: { enabled: state.adayeDinOn, sobh: state.namazSobh, zohr: state.namazZohr, asr: state.namazAsr, maghreb: state.namazMaghreb, esha: state.namazEsha, rooze: state.rooze },
+            sleepSlots: state.sleepSlots,
+            items: state.items,
+            note: state.note || ''
+          }
+        };
+        const newReports = [...reports];
+        newReports[editIndex] = updatedReport;
+        setReports(newReports);
+        setEditingReportId(null);
+        const ok = await saveToFirestore(user.uid, state, newReports);
+        if (ok) alert('✅ گزارش با موفقیت ویرایش و ذخیره شد!');
+        return;
+      }
+    }
+
+    if (existingIndex !== -1) {
+      if (!window.confirm(`امروز (${today}) قبلاً گزارشی ثبت شده است. آیا می‌خواهید آن را با داده‌های جدید جایگزین کنید؟`)) return;
+    }
+    const r = {
+      id: Date.now(),
+      date: today,
+      dateValue: todayValue,
+      totalScore: total,
+      sections: {
+        scientific: { score: scientific.score, max: scientific.max },
+        tahzib: { score: tahzib.score, max: tahzib.max },
+        basirat: { score: basirat.score, max: basirat.max },
+        organization: { score: organization.score, max: organization.max }
+      },
+      details: {
+        ...state,
+        adayeDin: { enabled: state.adayeDinOn, sobh: state.namazSobh, zohr: state.namazZohr, asr: state.namazAsr, maghreb: state.namazMaghreb, esha: state.namazEsha, rooze: state.rooze },
+        sleepSlots: state.sleepSlots,
+        items: state.items,
+        note: state.note || ''
+      }
+    };
+    let newReports;
+    if (existingIndex !== -1) {
+      newReports = [...reports];
+      newReports[existingIndex] = r;
+    } else {
+      newReports = sortReportsDesc([r, ...reports]);
+    }
+    setReports(newReports);
+    setEditingReportId(null);
+    const ok = await saveToFirestore(user.uid, state, newReports);
+    if (ok) alert('✅ گزارش با موفقیت ذخیره شد.');
+  };
+
+  const deleteReport = async (id, date) => {
+    if (!window.confirm(`حذف گزارش ${date}؟`)) return;
+    const newReports = reports.filter(r => r.id !== id);
+    setReports(newReports);
+    await saveToFirestore(user.uid, state, newReports);
+  };
+
+  const editReport = (report) => {
+    const d = report.details;
+    setState(prev => ({
+      ...prev,
+      ...d,
+      items: d.items || prev.items,
+      sleepSlots: d.sleepSlots || prev.sleepSlots,
+      note: d.note || ''
+    }));
+    setEditingReportId(report.id);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const [codeModal, setCodeModal] = useState({ open: false, code: '', date: '' });
+  const getReportCode = (report) => {
+    const d = report.details;
+    const tempState = { ...getDefaultState(), ...d, items: d.items || getDefaultState().items, sleepSlots: d.sleepSlots || [{ sleep: '23:00', wake: '07:00' }] };
+    const code = generateCode(tempState);
+    setCodeModal({ open: true, code, date: report.date });
+    return code;
+  };
+
+  const [showImportModal, setShowImportModal] = useState(false);
+  const importReportFromCode = async (rawCode, dateStr) => {
+    let parsed;
+    try {
+      parsed = parseCode(rawCode);
+    } catch (err) {
+      alert('❌ کد رمزی نامعتبر است:\n' + err.message);
+      return false;
+    }
+    if (!dateStr) { alert('لطفاً تاریخ این گزارش را انتخاب کنید.'); return false; }
+    const dObj = new Date(dateStr + 'T00:00:00');
+    if (isNaN(dObj.getTime())) { alert('تاریخ نامعتبر است.'); return false; }
+    const dateFa = dObj.toLocaleDateString('fa-IR');
+    const dateValue = dObj.getTime();
+
+    const sci = calcSectionScore(parsed, parsed.items.scientific);
+    const tah = calcSectionScore(parsed, parsed.items.tahzib);
+    const bas = calcSectionScore(parsed, parsed.items.basirat);
+    const org = calcSectionScore(parsed, parsed.items.organization);
+    const totalScore = sci.score + tah.score + bas.score + org.score;
+
+    const existingIndex = reports.findIndex(r => r.date === dateFa);
+    if (existingIndex !== -1) {
+      if (!window.confirm(`برای تاریخ (${dateFa}) قبلاً گزارشی ثبت شده است. آیا می‌خواهید آن را با داده‌های این کد رمزی جایگزین کنید؟`)) return false;
+    }
+
+    const r = {
+      id: Date.now(),
+      date: dateFa,
+      dateValue,
+      totalScore,
+      sections: {
+        scientific: { score: sci.score, max: sci.max },
+        tahzib: { score: tah.score, max: tah.max },
+        basirat: { score: bas.score, max: bas.max },
+        organization: { score: org.score, max: org.max }
+      },
+      details: {
+        ...parsed,
+        adayeDin: { enabled: parsed.adayeDinOn, sobh: parsed.namazSobh, zohr: parsed.namazZohr, asr: parsed.namazAsr, maghreb: parsed.namazMaghreb, esha: parsed.namazEsha, rooze: parsed.rooze },
+        sleepSlots: parsed.sleepSlots,
+        items: parsed.items,
+        note: parsed.note || ''
+      }
+    };
+    let newReports;
+    if (existingIndex !== -1) {
+      newReports = [...reports];
+      newReports[existingIndex] = r;
+    } else {
+      newReports = sortReportsDesc([r, ...reports]);
+    }
+    setReports(newReports);
+    const ok = await saveToFirestore(user.uid, state, newReports);
+    if (ok) alert(`✅ گزارش تاریخ ${dateFa} با موفقیت وارد و ذخیره شد.\nامتیاز: ${totalScore}`);
+    return ok;
+  };
+
+  const [showAnalysis, setShowAnalysis] = useState(false);
+  const [filterPeriod, setFilterPeriod] = useState('month');
+  const getFiltered = useCallback((period) => {
+    const now = Date.now();
+    let cutoff = 0;
+    if (period === 'week') cutoff = now - 7 * 24 * 60 * 60 * 1000;
+    else if (period === 'month') cutoff = now - 30 * 24 * 60 * 60 * 1000;
+    else cutoff = 0;
+    return reports.filter(r => (r.dateValue || r.id) >= cutoff);
+  }, [reports]);
+
+  const filtered = getFiltered(filterPeriod);
+  const sorted = [...filtered].sort((a, b) => (a.dateValue || a.id) - (b.dateValue || b.id));
+
+  const secPerc = sorted.map(r => ({
+    date: r.date,
+    علمی: Math.min(100, Math.round((r.sections.scientific.score / r.sections.scientific.max) * 100)),
+    تهذیب: Math.min(100, Math.round((r.sections.tahzib.score / r.sections.tahzib.max) * 100)),
+    بصیرت: Math.min(100, Math.round((r.sections.basirat.score / r.sections.basirat.max) * 100)),
+    نظم: Math.min(100, Math.round((r.sections.organization.score / r.sections.organization.max) * 100))
+  }));
+  const sciRaw = sorted.map(r => ({ date: r.date, نمره: r.sections.scientific.score }));
+  const tahRaw = sorted.map(r => ({ date: r.date, نمره: r.sections.tahzib.score }));
+  const basRaw = sorted.map(r => ({ date: r.date, نمره: r.sections.basirat.score }));
+  const orgRaw = sorted.map(r => ({ date: r.date, نمره: r.sections.organization.score }));
+
+  const adaye = { صبح: 0, ظهر: 0, عصر: 0, مغرب: 0, عشا: 0, روزه: 0 };
+  sorted.forEach(r => {
+    const ad = r.details?.adayeDin;
+    if (ad) {
+      if (ad.sobh) adaye.صبح++;
+      if (ad.zohr) adaye.ظهر++;
+      if (ad.asr) adaye.عصر++;
+      if (ad.maghreb) adaye.مغرب++;
+      if (ad.esha) adaye.عشا++;
+      if (ad.rooze) adaye.روزه++;
+    }
+  });
+
+  const SimpleLine = ({ data, keys, colors, isPercent = false }) => {
+    const ref = useRef(null);
+    useEffect(() => {
+      if (ref.current && data && data.length > 0) {
+        const c = ref.current;
+        const rect = c.parentElement.getBoundingClientRect();
+        c.width = rect.width || 400;
+        c.height = rect.height || 200;
+        drawLine(c, data, keys, colors, isPercent);
+      }
+    }, [data, keys, colors, isPercent]);
+    return <canvas ref={ref} className="w-full h-full" />;
+  };
+
+  const renderItems = useCallback((sectionId, items) => {
+    const sectionState = state;
+    const updateField = (field, value) => update(field, value);
+    const isEdit = editMode[sectionId];
+    return items.map((item, index) => {
+      let component;
+      const wrapWithEdit = (comp) => {
+        if (isEdit) {
+          return (
+            <div key={item.id} className="item" style={{ borderBottom: '1px dashed #e2e8f0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+                <div className="order-btns">
+                  <button onClick={() => moveItem(sectionId, index, -1)} disabled={index === 0}>▲</button>
+                  <button onClick={() => moveItem(sectionId, index, 1)} disabled={index === items.length - 1}>▼</button>
+                  <button onClick={() => deleteItem(sectionId, index, item.id)} style={{ background: '#fee2e2', color: '#dc2626' }}>✖</button>
+                </div>
+                <div style={{ flex: 1 }}>{comp}</div>
+              </div>
+            </div>
+          );
+        }
+        return comp;
+      };
+      switch (item.type) {
+        case 'checkbox':
+          component = <CheckboxItem key={item.id} label={item.label} score={item.score} checked={sectionState[item.field] || false} onChange={() => updateField(item.field, !sectionState[item.field])} bonus={item.nature === 'bonus'} penalty={item.nature === 'penalty'} />;
+          break;
+        case 'toggleWithCheckbox':
+          component = (
+            <div key={item.id} className="card" style={{ background: '#f1f5f9', padding: '12px', margin: '8px 0' }}>
+              <div className="item"><label><input type="checkbox" checked={sectionState[item.field] || false} onChange={() => updateField(item.field, !sectionState[item.field])} /> {item.label} {item.nature === 'bonus' && <span className="bonus">تشویقی</span>}{item.nature === 'penalty' && <span className="penalty">منفی</span>}</label></div>
+              {sectionState[item.field] && <div className="item"><label><input type="checkbox" checked={sectionState[item.scoreField] || false} onChange={() => updateField(item.scoreField, !sectionState[item.scoreField])} /> دریافت امتیاز ({item.score})</label></div>}
+            </div>
+          );
+          break;
+        case 'slider': {
+          const handler = item.handler || ((v) => parseInt(v));
+          component = <SliderItem key={item.id} label={item.label} min={item.min} max={item.max} step={item.step} val={sectionState[item.field] || 0} onChange={(e) => updateField(item.field, handler(e.target.value))} extra={item.extra || ''} nature={item.nature} />;
+          break;
+        }
+        case 'toggleWithSlider':
+          component = (
+            <div key={item.id} className="card" style={{ background: '#f1f5f9', padding: '12px', margin: '8px 0' }}>
+              <div className="item"><label><input type="checkbox" checked={sectionState[item.field] || false} onChange={() => updateField(item.field, !sectionState[item.field])} /> {item.label} {item.nature === 'bonus' && <span className="bonus">تشویقی</span>}{item.nature === 'penalty' && <span className="penalty">منفی</span>}</label></div>
+              {sectionState[item.field] && <SliderItem label="امتیاز" min={item.min} max={item.max} step={item.step} val={sectionState[item.scoreField] || 0} onChange={(e) => updateField(item.scoreField, parseInt(e.target.value))} />}
+            </div>
+          );
+          break;
+        case 'adayeDin':
+          component = (
+            <div key={item.id} className="card" style={{ background: '#f1f5f9', padding: '12px', margin: '8px 0' }}>
+              <div className="item"><label><input type="checkbox" checked={sectionState[item.field] || false} onChange={() => updateField(item.field, !sectionState[item.field])} /> {item.label}</label></div>
+              {sectionState[item.field] && (
+                <div className="grid-2 sub-items">
+                  <CheckboxItem label="نماز صبح" score={0} checked={sectionState.namazSobh || false} onChange={() => updateField('namazSobh', !sectionState.namazSobh)} />
+                  <CheckboxItem label="نماز ظهر" score={0} checked={sectionState.namazZohr || false} onChange={() => updateField('namazZohr', !sectionState.namazZohr)} />
+                  <CheckboxItem label="نماز عصر" score={0} checked={sectionState.namazAsr || false} onChange={() => updateField('namazAsr', !sectionState.namazAsr)} />
+                  <CheckboxItem label="نماز مغرب" score={0} checked={sectionState.namazMaghreb || false} onChange={() => updateField('namazMaghreb', !sectionState.namazMaghreb)} />
+                  <CheckboxItem label="نماز عشا" score={0} checked={sectionState.namazEsha || false} onChange={() => updateField('namazEsha', !sectionState.namazEsha)} />
+                  <CheckboxItem label="روزه" score={0} checked={sectionState.rooze || false} onChange={() => updateField('rooze', !sectionState.rooze)} />
+                </div>
+              )}
+            </div>
+          );
+          break;
+        default: component = null;
+      }
+      return wrapWithEdit(component);
+    });
+  }, [state, editMode, update, moveItem, deleteItem]);
+
+  // ============================================================
+  // خروج با تأیید
+  // ============================================================
+  const handleSignOut = () => {
+    if (window.confirm('آیا مطمئن هستید که می‌خواهید از حساب خود خارج شوید؟')) {
+      auth.signOut();
+      setUser(null);
+    }
+  };
+
+  if (loading) return <div className="loading">⏳ در حال بارگذاری...</div>;
+  if (error) return <div className="error-box">❌ خطا: {error}<br /><button className="btn btn-blue" style={{marginTop:'12px', minWidth:'auto', padding:'8px 20px'}} onClick={() => window.location.reload()}>تلاش مجدد</button></div>;
+  if (!user) return <Login onLogin={() => setUser(auth.currentUser)} />;
+
+  return (
+    <div className="container">
+      <div className="header">
+        <div className="header-left">
+          <h1>داشبورد خودسازی</h1>
+          <span className="user-email">👤 {user.email}</span>
+          <span className="user-email" style={{
+            background: saveStatus === 'error' ? 'rgba(239,68,68,0.35)' : (saveStatus === 'saving' ? 'rgba(255,255,255,0.15)' : 'rgba(34,197,94,0.3)')
+          }}>
+            {saveStatus === 'saving' && '💾 در حال ذخیره...'}
+            {saveStatus === 'saved' && '✅ ذخیره شد'}
+            {saveStatus === 'error' && '⚠️ ذخیره ناموفق'}
+            {saveStatus === 'idle' && '—'}
+          </span>
+        </div>
+        <div className="score-wrap">
+          <div className="score-num">{total}</div>
+          <div className="score-max">از {totalMax}</div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <span style={{ fontWeight: 700, fontSize: '18px', color: '#1e293b' }}>🛏️ ساعت‌های خوابیدن</span>
+          <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{state.sleepSlots.length} بازه</span>
+        </div>
+        <SleepSlotManager slots={state.sleepSlots} onChange={(newSlots) => update('sleepSlots', newSlots)} />
+      </div>
+
+      <Section id="scientific" title="۱. علمی" score={scientific.score} max={scientific.max} open={open} onToggle={() => toggle('scientific')}>
+        {renderItems('scientific', state.items.scientific)}
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', gap: '8px', flexWrap: 'wrap' }}>
+          <button className="btn-sm" onClick={() => toggleEdit('scientific')}>{editMode.scientific ? '✔ ذخیره ترتیب' : '✏️ ویرایش'}</button>
+          <button className="btn-sm" style={{ background: '#2563eb', color: '#fff' }} onClick={() => openAddModal('scientific')}>➕ افزودن</button>
+        </div>
+      </Section>
+
+      <Section id="tahzib" title="۲. تهذیب" score={tahzib.score} max={tahzib.max} open={open} onToggle={() => toggle('tahzib')}>
+        {renderItems('tahzib', state.items.tahzib)}
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', gap: '8px', flexWrap: 'wrap' }}>
+          <button className="btn-sm" onClick={() => toggleEdit('tahzib')}>{editMode.tahzib ? '✔ ذخیره ترتیب' : '✏️ ویرایش'}</button>
+          <button className="btn-sm" style={{ background: '#2563eb', color: '#fff' }} onClick={() => openAddModal('tahzib')}>➕ افزودن</button>
+        </div>
+      </Section>
+
+      <Section id="basirat" title="۳. بصیرت" score={basirat.score} max={basirat.max} open={open} onToggle={() => toggle('basirat')}>
+        {renderItems('basirat', state.items.basirat)}
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', gap: '8px', flexWrap: 'wrap' }}>
+          <button className="btn-sm" onClick={() => toggleEdit('basirat')}>{editMode.basirat ? '✔ ذخیره ترتیب' : '✏️ ویرایش'}</button>
+          <button className="btn-sm" style={{ background: '#2563eb', color: '#fff' }} onClick={() => openAddModal('basirat')}>➕ افزودن</button>
+        </div>
+      </Section>
+
+      <Section id="organization" title="۴. نظم زندگی" score={organization.score} max={organization.max} open={open} onToggle={() => toggle('organization')}>
+        {renderItems('organization', state.items.organization)}
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', gap: '8px', flexWrap: 'wrap' }}>
+          <button className="btn-sm" onClick={() => toggleEdit('organization')}>{editMode.organization ? '✔ ذخیره ترتیب' : '✏️ ویرایش'}</button>
+          <button className="btn-sm" style={{ background: '#2563eb', color: '#fff' }} onClick={() => openAddModal('organization')}>➕ افزودن</button>
+        </div>
+        <div className="mt-4">
+          <label style={{ fontWeight: 700, fontSize: '14px', display: 'block', marginBottom: '4px' }}>📝 یادداشت روزانه</label>
+          <textarea 
+            className="note-field" 
+            placeholder="هر نکته یا اتفاقی که امروز می‌خواهید ثبت کنید..." 
+            value={state.note || ''} 
+            onChange={(e) => update('note', e.target.value)} 
+          />
+        </div>
+      </Section>
+
+      <div className="btn-wrap">
+        <button className="btn btn-green" onClick={saveReport}>{editingReportId ? '💾 ذخیره ویرایش' : 'ذخیره گزارش روزانه'}</button>
+        <button className="btn btn-blue" onClick={() => setShowAnalysis(!showAnalysis)} style={{ minWidth: '140px' }}>{showAnalysis ? 'بستن تحلیل' : 'تحلیل عملکرد'}</button>
+        <button className="btn btn-red" onClick={handleSignOut}>🚪 خروج</button>
+      </div>
+
+      {showAnalysis && (
+        <div className="card analysis-content">
+          <h3 style={{ fontSize: '20px', fontWeight: 900, color: '#1e40af', marginBottom: '12px', borderRight: '4px solid #3b82f6', paddingRight: '12px' }}>تحلیل عملکرد</h3>
+          <div className="filter-wrap">
+            <button className={`filter-btn ${filterPeriod === 'week' ? 'active' : ''}`} onClick={() => setFilterPeriod('week')}>هفته</button>
+            <button className={`filter-btn ${filterPeriod === 'month' ? 'active' : ''}`} onClick={() => setFilterPeriod('month')}>ماه</button>
+            <button className={`filter-btn ${filterPeriod === 'all' ? 'active' : ''}`} onClick={() => setFilterPeriod('all')}>کل</button>
+          </div>
+          {filtered.length === 0 ? <div className="empty">داده‌ای برای این بازه وجود ندارد.</div> : (
+            <>
+              <h4 style={{ fontWeight: 700, marginBottom: '8px' }}>مقایسه درصدی شاخه‌ها</h4>
+              <div className="chart-box"><SimpleLine data={secPerc} keys={['علمی', 'تهذیب', 'بصیرت', 'نظم']} colors={['#4f46e5', '#10b981', '#f59e0b', '#ef4444']} isPercent={true} /></div>
+              <div className="grid-2 mt-4">
+                <div><h5 style={{ fontWeight: 700 }}>روند علمی (نمره خام)</h5><div className="chart-box" style={{ height: '180px' }}><SimpleLine data={sciRaw} keys={['نمره']} colors={['#4f46e5']} /></div></div>
+                <div><h5 style={{ fontWeight: 700 }}>روند تهذیب (نمره خام)</h5><div className="chart-box" style={{ height: '180px' }}><SimpleLine data={tahRaw} keys={['نمره']} colors={['#10b981']} /></div></div>
+                <div><h5 style={{ fontWeight: 700 }}>روند بصیرت (نمره خام)</h5><div className="chart-box" style={{ height: '180px' }}><SimpleLine data={basRaw} keys={['نمره']} colors={['#f59e0b']} /></div></div>
+                <div><h5 style={{ fontWeight: 700 }}>روند نظم (نمره خام)</h5><div className="chart-box" style={{ height: '180px' }}><SimpleLine data={orgRaw} keys={['نمره']} colors={['#ef4444']} /></div></div>
+              </div>
+              <h4 style={{ fontWeight: 700, marginTop: '16px' }}>فراوانی ادای دین</h4>
+              <div className="adaye-box">
+                <span>نماز صبح: <span className="count">{adaye.صبح}</span></span>
+                <span>نماز ظهر: <span className="count">{adaye.ظهر}</span></span>
+                <span>نماز عصر: <span className="count">{adaye.عصر}</span></span>
+                <span>نماز مغرب: <span className="count">{adaye.مغرب}</span></span>
+                <span>نماز عشا: <span className="count">{adaye.عشا}</span></span>
+                <span>روزه: <span className="count">{adaye.روزه}</span></span>
+              </div>
+              <div className="grid-2 mt-4">
+                <div className="card" style={{ background: '#f1f5f9', padding: '12px' }}>
+                  <p style={{ color: '#64748b' }}>میانگین امتیاز کل</p>
+                  <p style={{ fontSize: '24px', fontWeight: 900, color: '#2563eb' }}>{Math.round(filtered.reduce((s, r) => s + r.totalScore, 0) / filtered.length)}</p>
+                </div>
+                <div className="card" style={{ background: '#f1f5f9', padding: '12px' }}>
+                  <p style={{ color: '#64748b' }}>تعداد گزارش‌ها</p>
+                  <p style={{ fontSize: '24px', fontWeight: 900, color: '#2563eb' }}>{filtered.length}</p>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      <div className="card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', borderBottom: 'none' }}>
+          <h3 style={{ fontSize: '18px', fontWeight: 900, color: '#1e40af', borderRight: '4px solid #3b82f6', paddingRight: '12px' }}>📋 گزارش‌های قبلی</h3>
+          <button className="btn-sm" style={{ background: '#8b5cf6', color: '#fff' }} onClick={() => setShowImportModal(true)}>📥 وارد کردن با کد رمزی</button>
+        </div>
+        {sortedReports.length === 0 ? <div className="empty">هنوز گزارشی ذخیره نشده است.</div> : 
+          sortedReports.map(r => (
+            <div key={r.id} className="report-card">
+              <div className="report-header">
+                <div>
+                  <span className="date" style={{ fontWeight: 700, fontSize: '16px' }}>{r.date}</span>
+                  <span className="score" style={{ fontWeight: 700, color: '#2563eb', marginRight: '12px' }}>امتیاز: {r.totalScore} از {r.sections.scientific.max + r.sections.tahzib.max + r.sections.basirat.max + r.sections.organization.max}</span>
+                </div>
+                <button className="delete-btn" onClick={() => deleteReport(r.id, r.date)} title="حذف گزارش">🗑️</button>
+              </div>
+              {r.details?.note && (
+                <div className="report-details" style={{ marginTop: '4px', padding: '8px 12px', background: '#fef9c3', borderRadius: '8px', fontSize: '14px' }}>
+                  📝 {r.details.note}
+                </div>
+              )}
+              <div className="report-actions">
+                <button className="btn-sm" style={{ background: '#3b82f6', color: '#fff' }} onClick={() => editReport(r)}>✏️ ویرایش</button>
+                <button className="btn-sm" style={{ background: '#8b5cf6', color: '#fff' }} onClick={() => getReportCode(r)}>🔑 کد رمزی</button>
+              </div>
+            </div>
+          ))
+        }
+        <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'center' }}>
+          <button className="btn btn-red" onClick={clearAllData} style={{ minWidth: '200px' }}>🗑️ پاک کردن همه داده‌ها</button>
+        </div>
+      </div>
+
+      <AddItemModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} onAdd={handleAddItem} />
+      <CodeModal isOpen={codeModal.open} code={codeModal.code} date={codeModal.date} onClose={() => setCodeModal({ open: false, code: '', date: '' })} />
+      <ImportCodeModal isOpen={showImportModal} onClose={() => setShowImportModal(false)} onImport={importReportFromCode} />
+    </div>
+  );
+};
+
+ReactDOM.render(<App />, document.getElementById('root'));
+</script>
+</body>
+</html>
