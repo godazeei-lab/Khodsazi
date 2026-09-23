@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
   <meta charset="UTF-8" />
@@ -108,7 +108,15 @@
     .error-box { background: #fee2e2; border: 1px solid #ef4444; color: #991b1b; padding: 16px; border-radius: 16px; margin: 20px; text-align: center; }
     .note-field { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 12px; font-family: 'Vazirmatn', sans-serif; font-size: 14px; resize: vertical; min-height: 80px; margin-top: 8px; }
     .note-field:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
-    @media (max-width: 500px) { .grid-2 { grid-template-columns: 1fr; } .btn { min-width: 100px; padding: 10px 16px; font-size: 14px; } .sleep-slot-item { flex-wrap: wrap; } .report-card .report-actions { justify-content: flex-start; } .header { flex-direction: column; align-items: stretch; text-align: center; } .header .score-wrap { text-align: center; } .header .header-left { justify-content: center; } }
+    /* استایل مربع‌های کاهش امتیاز */
+    .penalty-box { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px 0; }
+    .penalty-square { width: 32px; height: 32px; border-radius: 8px; background: #22c55e; border: 2px solid #16a34a; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 14px; }
+    .penalty-square:hover { transform: scale(1.1); }
+    .penalty-square.used { background: #ef4444; border-color: #dc2626; }
+    .penalty-restore { width: 32px; height: 32px; border-radius: 8px; background: #e2e8f0; border: 2px solid #cbd5e1; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; color: #475569; font-weight: 700; font-size: 16px; }
+    .penalty-restore:hover { background: #cbd5e1; }
+    .penalty-label { font-size: 13px; color: #64748b; margin-right: 8px; }
+    @media (max-width: 500px) { .grid-2 { grid-template-columns: 1fr; } .btn { min-width: 100px; padding: 10px 16px; font-size: 14px; } .sleep-slot-item { flex-wrap: wrap; } .report-card .report-actions { justify-content: flex-start; } .header { flex-direction: column; align-items: stretch; text-align: center; } .header .score-wrap { text-align: center; } .header .header-left { justify-content: center; } .penalty-square, .penalty-restore { width: 28px; height: 28px; font-size: 12px; } }
   </style>
 </head>
 <body>
@@ -212,22 +220,8 @@ const Login = ({ onLogin }) => {
           🔄 ورود با ایمیل قبلی: <strong>{savedEmail}</strong> (کلیک کنید)
         </div>
       )}
-      <input
-        type="email"
-        placeholder="ایمیل"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        disabled={loading}
-      />
-      <input
-        id="password-input"
-        type="password"
-        placeholder="رمز عبور"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        disabled={loading}
-        onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-      />
+      <input type="email" placeholder="ایمیل" value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading} />
+      <input id="password-input" type="password" placeholder="رمز عبور" value={password} onChange={(e) => setPassword(e.target.value)} disabled={loading} onKeyDown={(e) => e.key === 'Enter' && handleLogin()} />
       {error && <div className="error">{error}</div>}
       <div className="btn-row">
         <button className="btn btn-blue" onClick={handleLogin} disabled={loading}>ورود</button>
@@ -241,49 +235,46 @@ const Login = ({ onLogin }) => {
 // ============================================================
 // 🧠 توابع کمکی
 // ============================================================
-const handleMindDesire = (val) => { const n=Number(val); if(n>=5)return 5; if(n>=3)return 3; return 0; };
 const handleNamazShab = (val) => { const n=Number(val); if(n>=10)return 10; if(n>=5)return 5; return 0; };
 const handleNamazAval = (val) => { const n=Number(val); if(n>=15)return 15; if(n>=10)return 10; if(n>=5)return 5; return 0; };
+const handleKhahesh = (val) => { const n=Number(val); if(n>=10)return 10; if(n>=5)return 5; return 0; };
 
 const getDefaultItems = () => ({
   scientific: [
     { id: 'preStudy', label: 'پیش مطالعه', type: 'checkbox', field: 'preStudy', score: 15, nature: 'normal', conditional: false },
-    { id: 'studyDailySameDay', label: 'مطالعه همان روز', type: 'slider', field: 'studyDailySameDay', min: 0, max: 30, step: 1, score: 0, nature: 'normal', conditional: false },
+    { id: 'studyDailySameDay', label: 'مطالعه همان روز', type: 'slider', field: 'studyDailySameDay', min: 0, max: 40, step: 1, score: 0, nature: 'normal', conditional: false },
     { id: 'stabilization', label: 'تثبیت مطالب', type: 'checkbox', field: 'stabilization', score: 10, nature: 'normal', conditional: false },
     { id: 'discussion', label: 'مباحثه', type: 'toggleWithSlider', field: 'discussionOn', scoreField: 'discussionScore', min: 0, max: 30, step: 1, nature: 'normal', conditional: true },
-    { id: 'hafziat', label: 'حفظیات', type: 'slider', field: 'hafziat', min: 0, max: 15, step: 1, score: 0, nature: 'normal', conditional: false }
+    { id: 'hafziat', label: 'حفظیات', type: 'slider', field: 'hafziat', min: 0, max: 5, step: 1, score: 0, nature: 'normal', conditional: false }
   ],
   tahzib: [
-    { id: 'lang', label: 'کنترل زبان', type: 'slider', field: 'lang', min: 0, max: 10, step: 1, score: 0, nature: 'normal', conditional: false },
-    { id: 'look', label: 'کنترل نگاه', type: 'slider', field: 'look', min: 0, max: 10, step: 1, score: 0, nature: 'normal', conditional: false },
-    { id: 'mind', label: 'کنترل ذهن', type: 'slider', field: 'mind', min: 0, max: 5, step: 1, score: 0, nature: 'normal', conditional: false, extra: '۰،۳،۵', handler: handleMindDesire },
-    { id: 'desire', label: 'نه به خواهش‌های نفسانی', type: 'slider', field: 'desire', min: 0, max: 5, step: 1, score: 0, nature: 'normal', conditional: false, extra: '۰،۳،۵', handler: handleMindDesire },
+    { id: 'lang', label: 'کنترل زبان', type: 'penaltyCounter', field: 'lang', maxScore: 10, nature: 'normal', conditional: false },
+    { id: 'look', label: 'کنترل چشم', type: 'penaltyCounter', field: 'look', maxScore: 10, nature: 'normal', conditional: false },
+    { id: 'khahesh', label: 'خواهش نفسانی', type: 'slider', field: 'khahesh', min: 0, max: 10, step: 5, score: 0, nature: 'normal', conditional: false, extra: '۰،۵،۱۰', handler: handleKhahesh },
     { id: 'namazAval', label: 'نماز اول وقت', type: 'slider', field: 'namazAval', min: 0, max: 15, step: 5, score: 0, nature: 'normal', conditional: false, extra: '۰،۵،۱۰،۱۵', handler: handleNamazAval },
     { id: 'namazShab', label: 'نماز شب', type: 'slider', field: 'namazShab', min: 0, max: 10, step: 5, score: 0, nature: 'normal', conditional: false, extra: '۰،۵،۱۰', handler: handleNamazShab },
     { id: 'ziyarat', label: 'زیارت عاشورا', type: 'checkbox', field: 'ziyarat', score: 5, nature: 'normal', conditional: false },
+    { id: 'hadisKesa', label: 'حدیث کسا', type: 'checkbox', field: 'hadisKesa', score: 5, nature: 'normal', conditional: false },
     { id: 'sora', label: 'سوره فتح', type: 'checkbox', field: 'sora', score: 5, nature: 'normal', conditional: false },
-    { id: 'tasbihat', label: 'تسبیحات اربعه', type: 'checkbox', field: 'tasbihat', score: 5, nature: 'normal', conditional: false },
+    { id: 'tasbihat', label: 'تسبیحات حضرت', type: 'checkbox', field: 'tasbihat', score: 5, nature: 'normal', conditional: false },
     { id: 'eghame', label: 'اقامه', type: 'checkbox', field: 'eghame', score: 5, nature: 'normal', conditional: false },
     { id: 'azan', label: 'پوشیدن عبا', type: 'checkbox', field: 'azan', score: 5, nature: 'normal', conditional: false },
-    { id: 'akhlaq', label: 'اخلاق', type: 'checkbox', field: 'akhlaq', score: 5, nature: 'bonus', conditional: false },
     { id: 'mohasebeNafs', label: 'محاسبه نفس', type: 'checkbox', field: 'mohasebeNafs', score: 10, nature: 'normal', conditional: false },
-    { id: 'wajebatOff', label: 'انجام ندادن واجبات', type: 'checkbox', field: 'wajebatOff', score: -20, nature: 'penalty', conditional: false },
-    { id: 'adayeDin', label: 'ادای دِین (۱۰ امتیاز)', type: 'adayeDin', field: 'adayeDinOn', nature: 'normal', conditional: false }
+    { id: 'adayeDin', label: 'ادای دِین (۵ امتیاز)', type: 'adayeDin', field: 'adayeDinOn', nature: 'normal', conditional: false }
   ],
   basirat: [
-    { id: 'motaleah', label: 'مطالعه بصیرتی', type: 'slider', field: 'motaleah', min: 0, max: 20, step: 1, score: 0, nature: 'normal', conditional: false },
+    { id: 'motaleah', label: 'مطالعه بصیرتی', type: 'slider', field: 'motaleah', min: 0, max: 25, step: 1, score: 0, nature: 'normal', conditional: false },
     { id: 'socialPresence', label: '۱) حضور در اجتماع', type: 'checkbox', field: 'socialPresence', score: 10, nature: 'normal', conditional: false },
-    { id: 'socialPages', label: '۲) فعالیت در صفحات مجازی', type: 'checkbox', field: 'socialPages', score: 5, nature: 'normal', conditional: false },
-    { id: 'socialPost', label: '۳) پست در صفحات مجازی', type: 'checkbox', field: 'socialPost', score: 5, nature: 'normal', conditional: false },
-    { id: 'goal', label: 'هدف‌گذاری', type: 'checkbox', field: 'goal', score: 10, nature: 'normal', conditional: false },
+    { id: 'majazi', label: 'فعالیت مجازی', type: 'slider', field: 'majazi', min: 0, max: 10, step: 5, score: 0, nature: 'normal', conditional: false, extra: '۰،۵،۱۰', handler: handleKhahesh },
+    { id: 'goal', label: 'هدف‌گذاری', type: 'checkbox', field: 'goal', score: 5, nature: 'normal', conditional: false },
     { id: 'leadershipSpeech', label: 'تحلیل سخنان رهبری', type: 'checkbox', field: 'leadershipSpeech', score: 10, nature: 'normal', conditional: false }
   ],
   organization: [
     { id: 'sleepQuality', label: 'کیفیت خواب', type: 'slider', field: 'sleepQuality', min: 0, max: 10, step: 1, score: 0, nature: 'normal', conditional: false },
     { id: 'phoneOrder', label: 'نظم در استفاده از گوشی', type: 'slider', field: 'phoneOrder', min: 0, max: 10, step: 1, score: 0, nature: 'normal', conditional: false },
     { id: 'sports', label: 'ورزش', type: 'slider', field: 'sports', min: 0, max: 10, step: 1, score: 0, nature: 'normal', conditional: false },
-    { id: 'brush', label: 'مسواک', type: 'checkbox', field: 'brush', score: 10, nature: 'normal', conditional: false },
-    { id: 'profession', label: 'یادگیری حرفه', type: 'toggleWithSlider', field: 'professionOn', scoreField: 'professionScore', min: 0, max: 10, step: 1, nature: 'normal', conditional: true }
+    { id: 'profession', label: 'یادگیری حرفه', type: 'slider', field: 'profession', min: 0, max: 10, step: 1, score: 0, nature: 'normal', conditional: false },
+    { id: 'brush', label: 'مسواک', type: 'checkbox', field: 'brush', score: 10, nature: 'normal', conditional: false }
   ]
 });
 
@@ -328,9 +319,12 @@ const calcSectionScore = (state, items) => {
       if (item.nature === 'normal' && (!item.conditional || state[item.field])) max += item.max || 0;
     } else if (item.type === 'toggleWithSlider') {
       if (state[item.field]) { const val = getVal(item.scoreField); score += val; if (item.nature === 'normal') max += item.max || 0; }
+    } else if (item.type === 'penaltyCounter') {
+      score += getVal(item.field);
+      if (item.nature === 'normal') max += item.maxScore || 10;
     } else if (item.type === 'adayeDin') {
-      if (state[item.field]) { const any = state.namazSobh || state.namazZohr || state.namazAsr || state.namazMaghreb || state.namazEsha || state.rooze; if (any) score += 10; }
-      if (item.nature === 'normal' && (!item.conditional || state[item.field])) max += 10;
+      if (state[item.field]) { const any = state.namazSobh || state.namazZohr || state.namazAsr || state.namazMaghreb || state.namazEsha || state.rooze; if (any) score += 5; }
+      if (item.nature === 'normal' && (!item.conditional || state[item.field])) max += 5;
     }
   });
   return { score, max };
@@ -347,15 +341,20 @@ const calcTotalMax = (s, t, b, o) => s.max + t.max + b.max + o.max;
 // ============================================================
 const generateCode = (state) => {
   const s = state;
+  // علمی
   const sci = `S${s.preStudy?15:0}T${s.studyDailySameDay}D${s.stabilization?10:0}M${s.discussionOn?1:0}_${s.discussionScore}H${s.hafziat}`;
-  const tah = `L${s.lang}Lk${s.look}M${s.mind}D${s.desire}N${s.namazAval}N${s.namazShab}Z${s.ziyarat?1:0}S${s.sora?1:0}T${s.tasbihat?1:0}E${s.eghame?1:0}A${s.azan?1:0}K${s.akhlaq?1:0}Mh${s.mohasebeNafs?1:0}W${s.wajebatOff?1:0}`;
+  // تهذیب - زبان و چشم به صورت عدد (۰ تا ۱۰)، خواهش ۰/۵/۱۰
+  const tah = `L${s.lang}Lk${s.look}K${s.khahesh}N${s.namazAval}N${s.namazShab}Z${s.ziyarat?1:0}Hk${s.hadisKesa?1:0}S${s.sora?1:0}T${s.tasbihat?1:0}E${s.eghame?1:0}A${s.azan?1:0}Mh${s.mohasebeNafs?1:0}`;
+  // ادای دین
   const ad = `Ad${s.adayeDinOn?1:0}${s.namazSobh?1:0}${s.namazZohr?1:0}${s.namazAsr?1:0}${s.namazMaghreb?1:0}${s.namazEsha?1:0}${s.rooze?1:0}`;
-  const bas = `B${s.motaleah}P${s.socialPresence?1:0}G${s.socialPages?1:0}Ps${s.socialPost?1:0}Gd${s.goal?1:0}Ld${s.leadershipSpeech?1:0}`;
-  const profScore = s.professionOn ? s.professionScore : 0;
+  // بصیرت
+  const bas = `B${s.motaleah}P${s.socialPresence?1:0}M${s.majazi}Gd${s.goal?1:0}Ld${s.leadershipSpeech?1:0}`;
+  // نظم
   const sleepSlots = s.sleepSlots || [];
   const sleepStr = sleepSlots.length === 0 ? '0' : sleepSlots.map(t => `${t.sleep.replace(':','')}-${t.wake.replace(':','')}`).join('_');
-  const org = `O${s.sports || 0}R${s.sleepQuality}Q${s.phoneOrder}Pr${s.professionOn?1:0}_${profScore}Br${s.brush?1:0}Sl${sleepStr}`;
+  const org = `O${s.sports}R${s.sleepQuality}Q${s.phoneOrder}Pr${s.profession}Br${s.brush?1:0}Sl${sleepStr}`;
 
+  // آیتم‌های سفارشی
   const sections = ['scientific', 'tahzib', 'basirat', 'organization'];
   const customItems = [];
   sections.forEach(section => {
@@ -365,6 +364,7 @@ const generateCode = (state) => {
         let fieldValue = 0, scoreValue = 0;
         if (item.type === 'checkbox') { fieldValue = s[item.field] ? 1 : 0; scoreValue = fieldValue; }
         else if (item.type === 'slider') { fieldValue = s[item.field] || 0; scoreValue = fieldValue; }
+        else if (item.type === 'penaltyCounter') { fieldValue = s[item.field] || 0; scoreValue = fieldValue; }
         else if (item.type === 'toggleWithCheckbox') { fieldValue = s[item.field] ? 1 : 0; scoreValue = s[item.scoreField] ? 1 : 0; }
         else if (item.type === 'toggleWithSlider') { fieldValue = s[item.field] ? 1 : 0; scoreValue = s[item.scoreField] || 0; }
         customItems.push({ section, ...item, fieldValue, scoreValue });
@@ -384,120 +384,6 @@ const generateCode = (state) => {
   return `${sci}|${tah}|${ad}|${bas}|${org}|${customStr}|${noteStr}`;
 };
 
-// ============================================================
-// 🔓 رمزگشایی کد رمزی (عکس generateCode)
-// ============================================================
-const parseCode = (rawCode) => {
-  const code = (rawCode || '').trim();
-  if (!code) throw new Error('کد رمزی خالی است.');
-  const parts = code.split('|');
-  if (parts.length < 5) throw new Error('فرمت کد رمزی نامعتبر است (تعداد بخش‌ها کم است).');
-  const [sciStr, tahStr, adStr, basStr, orgStr, customStr = '', noteStr = ''] = parts;
-  const result = { ...getDefaultState() };
-
-  let m = sciStr.match(/^S(\d+)T(\d+)D(\d+)M(\d)_(\d+)H(\d+)$/);
-  if (!m) throw new Error('بخش «علمی» کد رمزی نامعتبر است.');
-  result.preStudy = m[1] === '15';
-  result.studyDailySameDay = parseInt(m[2], 10) || 0;
-  result.stabilization = m[3] === '10';
-  result.discussionOn = m[4] === '1';
-  result.discussionScore = parseInt(m[5], 10) || 0;
-  result.hafziat = parseInt(m[6], 10) || 0;
-
-  m = tahStr.match(/^L(\d+)Lk(\d+)M(\d+)D(\d+)N(\d+)N(\d+)Z(\d)S(\d)T(\d)E(\d)A(\d)K(\d)Mh(\d)W(\d)$/);
-  if (!m) throw new Error('بخش «تهذیب» کد رمزی نامعتبر است.');
-  result.lang = parseInt(m[1], 10) || 0;
-  result.look = parseInt(m[2], 10) || 0;
-  result.mind = parseInt(m[3], 10) || 0;
-  result.desire = parseInt(m[4], 10) || 0;
-  result.namazAval = parseInt(m[5], 10) || 0;
-  result.namazShab = parseInt(m[6], 10) || 0;
-  result.ziyarat = m[7] === '1';
-  result.sora = m[8] === '1';
-  result.tasbihat = m[9] === '1';
-  result.eghame = m[10] === '1';
-  result.azan = m[11] === '1';
-  result.akhlaq = m[12] === '1';
-  result.mohasebeNafs = m[13] === '1';
-  result.wajebatOff = m[14] === '1';
-
-  m = adStr.match(/^Ad(\d)(\d)(\d)(\d)(\d)(\d)(\d)$/);
-  if (!m) throw new Error('بخش «ادای دین» کد رمزی نامعتبر است.');
-  result.adayeDinOn = m[1] === '1';
-  result.namazSobh = m[2] === '1';
-  result.namazZohr = m[3] === '1';
-  result.namazAsr = m[4] === '1';
-  result.namazMaghreb = m[5] === '1';
-  result.namazEsha = m[6] === '1';
-  result.rooze = m[7] === '1';
-
-  m = basStr.match(/^B(\d+)P(\d)G(\d)Ps(\d)Gd(\d)Ld(\d)$/);
-  if (!m) throw new Error('بخش «بصیرت» کد رمزی نامعتبر است.');
-  result.motaleah = parseInt(m[1], 10) || 0;
-  result.socialPresence = m[2] === '1';
-  result.socialPages = m[3] === '1';
-  result.socialPost = m[4] === '1';
-  result.goal = m[5] === '1';
-  result.leadershipSpeech = m[6] === '1';
-
-  m = orgStr.match(/^O(\d+)R(\d+)Q(\d+)Pr(\d)_(\d+)Br(\d)Sl(.+)$/);
-  if (!m) throw new Error('بخش «نظم زندگی» کد رمزی نامعتبر است.');
-  result.sports = parseInt(m[1], 10) || 0;
-  result.sleepQuality = parseInt(m[2], 10) || 0;
-  result.phoneOrder = parseInt(m[3], 10) || 0;
-  result.professionOn = m[4] === '1';
-  result.professionScore = parseInt(m[5], 10) || 0;
-  result.brush = m[6] === '1';
-  const sleepRaw = m[7];
-  if (sleepRaw && sleepRaw !== '0') {
-    result.sleepSlots = sleepRaw.split('_').map(pair => {
-      const [sleepT, wakeT] = pair.split('-');
-      const fmt = (t) => (t && t.length === 4) ? `${t.slice(0, 2)}:${t.slice(2, 4)}` : '00:00';
-      return { sleep: fmt(sleepT), wake: fmt(wakeT) };
-    });
-  } else {
-    result.sleepSlots = [{ sleep: '23:00', wake: '07:00' }];
-  }
-
-  result.items = getDefaultItems();
-  if (customStr && customStr.startsWith('C')) {
-    const encoded = customStr.slice(1);
-    encoded.split(';').filter(Boolean).forEach(itemPart => {
-      const p = itemPart.split(':');
-      if (p.length < 11) return;
-      const [section, type, field, scoreField, score, max, nature, conditional, label, fieldValue, scoreValue] = p;
-      if (!result.items[section]) result.items[section] = [];
-      result.items[section].push({
-        id: genId(), label, type,
-        field: field || undefined,
-        scoreField: scoreField || undefined,
-        score: parseInt(score, 10) || 0,
-        max: parseInt(max, 10) || 0,
-        nature: nature || 'normal',
-        conditional: conditional === '1'
-      });
-      if (type === 'checkbox') {
-        result[field] = fieldValue === '1';
-      } else if (type === 'slider') {
-        result[field] = parseInt(fieldValue, 10) || 0;
-      } else if (type === 'toggleWithCheckbox') {
-        result[field] = fieldValue === '1';
-        if (scoreField) result[scoreField] = scoreValue === '1';
-      } else if (type === 'toggleWithSlider') {
-        result[field] = fieldValue === '1';
-        if (scoreField) result[scoreField] = parseInt(scoreValue, 10) || 0;
-      }
-    });
-  }
-
-  result.note = '';
-  if (noteStr && noteStr.startsWith('N')) {
-    try { result.note = decodeURIComponent(noteStr.slice(1)); } catch (e) { result.note = ''; }
-  }
-
-  return result;
-};
-
 const createNewItem = (formData) => {
   const isConditional = formData.type === 'toggleWithSlider' || formData.type === 'toggleWithCheckbox';
   const base = { id: genId(), label: formData.label, type: formData.type, nature: formData.nature, conditional: isConditional };
@@ -505,6 +391,8 @@ const createNewItem = (formData) => {
     return { ...base, field: formData.field, score: parseInt(formData.score) || 0, scoreField: formData.type === 'toggleWithCheckbox' ? formData.scoreField : undefined };
   } else if (formData.type === 'slider') {
     return { ...base, field: formData.field, min: 0, max: parseInt(formData.maxScore) || 10, step: 1, score: 0 };
+  } else if (formData.type === 'penaltyCounter') {
+    return { ...base, field: formData.field, maxScore: parseInt(formData.maxScore) || 10 };
   } else {
     return { ...base, field: formData.field, scoreField: formData.scoreField, min: 0, max: parseInt(formData.maxScore) || 10, step: 1 };
   }
@@ -513,11 +401,11 @@ const createNewItem = (formData) => {
 function getDefaultState() {
   return {
     preStudy:false, studyDailySameDay:0, stabilization:false, discussionOn:false, discussionScore:0, hafziat:0,
-    lang:0, look:0, mind:0, desire:0, namazAval:0, namazShab:0, ziyarat:false, sora:false, tasbihat:false,
-    eghame:false, azan:false, akhlaq:false, mohasebeNafs:false, wajebatOff:false,
-    adayeDinOn:false, namazSobh:false, namazZohr:false, namazAsr:false, namazMaghreb:false, namazEsha:false, rooze:false,
-    motaleah:0, socialPresence:false, socialPages:false, socialPost:false, goal:false, leadershipSpeech:false,
-    sports:0, sleepQuality:5, phoneOrder:5, professionOn:false, professionScore:0, brush:false,
+    lang:10, look:10, khahesh:0, namazAval:0, namazShab:0, ziyarat:false, hadisKesa:false, sora:false, tasbihat:false,
+    eghame:false, azan:false, mohasebeNafs:false, adayeDinOn:false,
+    namazSobh:false, namazZohr:false, namazAsr:false, namazMaghreb:false, namazEsha:false, rooze:false,
+    motaleah:0, socialPresence:false, majazi:0, goal:false, leadershipSpeech:false,
+    sports:0, sleepQuality:5, phoneOrder:5, profession:0, brush:false,
     sleepSlots:[{ sleep: '23:00', wake: '07:00' }],
     items: getDefaultItems(),
     note: ''
@@ -560,6 +448,49 @@ const CheckboxItem = memo(({ label, score, checked, onChange, bonus, penalty }) 
 const SliderItem = memo(({ label, min, max, step, val, onChange, extra, nature }) => (
   <div className="slider-wrap"><div className="label-row"><span>{label} {nature === 'bonus' && <span className="bonus" style={{marginRight:'8px'}}>تشویقی</span>}{nature === 'penalty' && <span className="penalty" style={{marginRight:'8px'}}>منفی</span>}{extra && <span className="text-sm text-indigo-500" style={{marginRight:'4px'}}>({extra})</span>}</span><span className="val">{val}</span></div><input type="range" min={min} max={max} step={step} value={val} onChange={onChange} /></div>
 ));
+
+// کامپوننت جدید: شمارنده کاهش امتیاز (برای زبان و چشم)
+const PenaltyCounter = memo(({ label, value, maxScore, onChange }) => {
+  const usedCount = maxScore - value;
+  const squares = [];
+  for (let i = 0; i < maxScore; i++) {
+    const isUsed = i < usedCount;
+    squares.push(
+      <div
+        key={i}
+        className={`penalty-square ${isUsed ? 'used' : ''}`}
+        onClick={() => {
+          // اگر مربع قبلاً استفاده شده، کاری نکن
+          if (isUsed) return;
+          // کم کردن یک امتیاز
+          if (value > 0) onChange(value - 1);
+        }}
+        title={isUsed ? 'استفاده شده' : 'کلیک کنید تا ۱ امتیاز کم شود'}
+      >
+        {isUsed ? '−' : ''}
+      </div>
+    );
+  }
+  return (
+    <div className="slider-wrap" style={{ padding: '12px 4px' }}>
+      <div className="label-row" style={{ marginBottom: '8px' }}>
+        <span style={{ fontWeight: 700 }}>{label}</span>
+        <span className="val" style={{ fontWeight: 700, color: '#2563eb' }}>{value} از {maxScore}</span>
+      </div>
+      <div className="penalty-box">
+        <span className="penalty-label">خطا:</span>
+        {squares}
+        <div
+          className="penalty-restore"
+          onClick={() => { if (value < maxScore) onChange(value + 1); }}
+          title="برگرداندن یک امتیاز"
+        >
+          ➕
+        </div>
+      </div>
+    </div>
+  );
+});
 
 const SleepSlotManager = ({ slots, onChange }) => {
   const addSlot = () => { if (slots.length >= 3) return; onChange([...slots, { sleep: '13:00', wake: '14:00' }]); };
@@ -618,103 +549,18 @@ const AddItemModal = ({ isOpen, onClose, onAdd }) => {
           <option value="slider">نوار (متغیر)</option>
           <option value="toggleWithSlider">مشروط (فعال/غیرفعال + نوار)</option>
           <option value="toggleWithCheckbox">مشروط (فعال/غیرفعال + تیک‌زدنی)</option>
+          <option value="penaltyCounter">شمارنده کاهش امتیاز</option>
         </select>
         {form.type === 'checkbox' || form.type === 'toggleWithCheckbox' ? (
           <><label>امتیاز</label><input type="number" value={form.score} onChange={(e) => setForm({ ...form, score: e.target.value })} /></>
         ) : (
-          <><label>حداکثر امتیاز (نوار)</label><input type="number" value={form.maxScore} onChange={(e) => setForm({ ...form, maxScore: e.target.value })} /></>
+          <><label>حداکثر امتیاز</label><input type="number" value={form.maxScore} onChange={(e) => setForm({ ...form, maxScore: e.target.value })} /></>
         )}
         <label>ماهیت</label>
         <select value={form.nature} onChange={(e) => setForm({ ...form, nature: e.target.value })}>
           <option value="normal">عادی</option><option value="bonus">تشویقی</option><option value="penalty">منفی</option>
         </select>
         <div className="btn-row"><button className="btn-secondary" onClick={onClose}>لغو</button><button className="btn-primary" onClick={handleSubmit}>افزودن</button></div>
-      </div>
-    </div>
-  );
-};
-
-// ============================================================
-// 🔑 مودال نمایش و کپی کد رمزی
-// ============================================================
-const CodeModal = ({ isOpen, code, date, onClose }) => {
-  const [copied, setCopied] = useState(false);
-  useEffect(() => { if (isOpen) setCopied(false); }, [isOpen]);
-  if (!isOpen) return null;
-
-  const handleCopy = async () => {
-    try {
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(code);
-      } else {
-        const ta = document.createElement('textarea');
-        ta.value = code;
-        ta.style.position = 'fixed';
-        ta.style.opacity = '0';
-        document.body.appendChild(ta);
-        ta.focus(); ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-      }
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (e) {
-      alert('کپی خودکار ممکن نشد. لطفاً متن کد را به‌صورت دستی انتخاب و کپی کنید.');
-    }
-  };
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h3>🔑 کد رمزی گزارش {date}</h3>
-        <div className="code-box">{code}</div>
-        <button className="copy-btn" onClick={handleCopy}>{copied ? '✅ کپی شد' : '📋 کپی کد'}</button>
-        <div className="btn-row"><button className="btn-secondary" onClick={onClose}>بستن</button></div>
-      </div>
-    </div>
-  );
-};
-
-// ============================================================
-// 📥 مودال وارد کردن گزارش از روی کد رمزی
-// ============================================================
-const ImportCodeModal = ({ isOpen, onClose, onImport }) => {
-  const [code, setCode] = useState('');
-  const [date, setDate] = useState('');
-  const [busy, setBusy] = useState(false);
-  useEffect(() => { if (isOpen) { setCode(''); setDate(''); setBusy(false); } }, [isOpen]);
-  if (!isOpen) return null;
-
-  const handleSubmit = async () => {
-    if (!code.trim()) { alert('لطفاً کد رمزی را وارد کنید.'); return; }
-    if (!date) { alert('لطفاً تاریخ این گزارش را انتخاب کنید.'); return; }
-    setBusy(true);
-    const ok = await onImport(code.trim(), date);
-    setBusy(false);
-    if (ok) onClose();
-  };
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h3>📥 وارد کردن گزارش با کد رمزی</h3>
-        <label>کد رمزی</label>
-        <textarea
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          placeholder="کد رمزی را اینجا جای‌گذاری (Paste) کنید..."
-          style={{ width: '100%', minHeight: '90px', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '12px', fontFamily: "'Courier New', monospace", fontSize: '12px', direction: 'ltr', textAlign: 'left', marginBottom: '12px' }}
-          disabled={busy}
-        />
-        <label>این گزارش برای چه تاریخی است؟</label>
-        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} disabled={busy} />
-        <p style={{ fontSize: '12px', color: '#64748b', marginTop: '-4px', marginBottom: '12px' }}>
-          گزارش با این تاریخ در فهرست گزارش‌ها و نمودارهای تحلیل، در جای درست و به‌ترتیب زمانی خودش قرار می‌گیرد.
-        </p>
-        <div className="btn-row">
-          <button className="btn-secondary" onClick={onClose} disabled={busy}>لغو</button>
-          <button className="btn-primary" onClick={handleSubmit} disabled={busy}>{busy ? 'در حال ثبت...' : 'ثبت گزارش'}</button>
-        </div>
       </div>
     </div>
   );
@@ -731,34 +577,12 @@ const App = () => {
   const [reports, setReports] = useState([]);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [editingReportId, setEditingReportId] = useState(null);
-  const [saveStatus, setSaveStatus] = useState('idle'); // idle | saving | saved | error
-  const pendingSaveRef = useRef(false);
 
-  const saveToFirestore = useCallback(async (userId, newState, newReports, { silent = false } = {}) => {
-    if (!userId || !db) return false;
-    setSaveStatus('saving');
-    pendingSaveRef.current = true;
-    try {
-      localStorage.setItem('khodsazi_backup_' + userId, JSON.stringify({ state: newState, reports: newReports, ts: Date.now() }));
-    } catch (e) { /* پر بودن حافظه یا حالت خصوصی مرورگر - مشکلی نیست */ }
+  const saveToFirestore = useCallback(async (userId, newState, newReports) => {
+    if (!userId || !db) return;
     try {
       await db.collection('users').doc(userId).set({ state: newState, reports: newReports, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
-      pendingSaveRef.current = false;
-      setSaveStatus('saved');
-      return true;
-    } catch (err) {
-      console.error('Save error:', err);
-      pendingSaveRef.current = false;
-      setSaveStatus('error');
-      if (!silent) alert('❌ ذخیره اطلاعات ناموفق بود!\n\nاتصال اینترنت خود را بررسی کنید و دوباره تلاش کنید. اطلاعات شما فعلاً فقط به‌صورت موقت روی همین دستگاه نگه‌داری شده و ممکن است در صورت بستن صفحه از بین برود.');
-      return false;
-    }
-  }, []);
-
-  useEffect(() => {
-    const warn = (e) => { if (pendingSaveRef.current) { e.preventDefault(); e.returnValue = ''; return ''; } };
-    window.addEventListener('beforeunload', warn);
-    return () => window.removeEventListener('beforeunload', warn);
+    } catch (err) { console.error('Save error:', err); }
   }, []);
 
   useEffect(() => {
@@ -774,10 +598,8 @@ const App = () => {
   useEffect(() => {
     if (!user || !db) return;
     const unsubscribe = db.collection('users').doc(user.uid).onSnapshot((doc) => {
-      let cloudReportCount = 0;
       if (doc.exists) {
         const data = doc.data();
-        cloudReportCount = (data.reports || []).length;
         if (data.state) {
           const defaultState = getDefaultState();
           const mergedItems = mergeItems(defaultState.items, data.state.items);
@@ -787,25 +609,8 @@ const App = () => {
       } else {
         const defaultState = getDefaultState();
         setState(defaultState); setReports([]);
-        saveToFirestore(user.uid, defaultState, [], { silent: true });
+        saveToFirestore(user.uid, defaultState, []);
       }
-
-      // بررسی نسخه پشتیبان محلی: اگر تعداد گزارش‌های محلی بیشتر از ابر باشد یعنی یک بار ذخیره روی ابر ناموفق بوده
-      try {
-        const backupRaw = localStorage.getItem('khodsazi_backup_' + user.uid);
-        if (backupRaw) {
-          const backup = JSON.parse(backupRaw);
-          const backupReportCount = (backup.reports || []).length;
-          if (backupReportCount > cloudReportCount) {
-            if (window.confirm(`⚠️ یک نسخه پشتیبان محلی روی این دستگاه پیدا شد که ${backupReportCount} گزارش دارد، در حالی که نسخه ذخیره‌شده در ابر فقط ${cloudReportCount} گزارش دارد.\n\nظاهراً یک ذخیره‌سازی قبلی ناقص مانده است. آیا می‌خواهید نسخه محلی (کامل‌تر) بازیابی و جایگزین شود؟`)) {
-              setState(backup.state);
-              setReports(backup.reports);
-              saveToFirestore(user.uid, backup.state, backup.reports);
-            }
-          }
-        }
-      } catch (e) { /* نادیده گرفتن خطای بازیابی نسخه پشتیبان */ }
-
       setDataLoaded(true);
     }, (err) => { setError(err.message); });
     return () => unsubscribe();
@@ -813,7 +618,7 @@ const App = () => {
 
   useEffect(() => {
     if (!user || !dataLoaded || !db) return;
-    const timeout = setTimeout(() => { saveToFirestore(user.uid, state, reports, { silent: true }); }, 500);
+    const timeout = setTimeout(() => { saveToFirestore(user.uid, state, reports); }, 500);
     return () => clearTimeout(timeout);
   }, [state, reports, user, dataLoaded, saveToFirestore]);
 
@@ -833,6 +638,7 @@ const App = () => {
       update(field, false);
       if (item.type === 'toggleWithCheckbox') update(scoreField, false);
     } else if (item.type === 'slider') { update(field, 0); }
+    else if (item.type === 'penaltyCounter') { update(field, item.maxScore || 10); }
     else { update(field, false); update(scoreField, 0); }
   }, [addTarget, state.items, update]);
 
@@ -853,13 +659,12 @@ const App = () => {
     }
   }, [state.items, update]);
 
-  const clearAllData = async () => {
+  const clearAllData = () => {
     if (reports.length === 0) { alert('هیچ داده‌ای برای حذف وجود ندارد.'); return; }
     if (!window.confirm('⚠️ آیا از حذف تمام گزارش‌ها مطمئن هستید؟')) return;
     if (!window.confirm('❗ این عمل غیرقابل بازگشت است! آیا باز هم مطمئن هستید؟')) return;
     setReports([]);
-    const ok = await saveToFirestore(user.uid, state, []);
-    if (ok) alert('✅ تمام داده‌ها با موفقیت حذف شدند.');
+    alert('✅ تمام داده‌ها با موفقیت حذف شدند.');
   };
 
   const scientific = useMemo(() => calcScientificScore(state, state.items.scientific), [state]);
@@ -869,20 +674,10 @@ const App = () => {
   const total = scientific.score + tahzib.score + basirat.score + organization.score;
   const totalMax = calcTotalMax(scientific, tahzib, basirat, organization);
 
-  // ============================================================
-  // 📝 توابع مربوط به گزارش‌ها
-  // ============================================================
-  const sortReportsDesc = (list) => [...list].sort((a, b) => (b.dateValue || b.id) - (a.dateValue || a.id));
-
-  // مرتب‌سازی گزارش‌ها برای نمایش، جدول تحلیل و نمودارها بر اساس تاریخ واقعی گزارش (نه زمان ثبت آن)
-  const sortedReports = useMemo(() => sortReportsDesc(reports), [reports]);
-
-  const saveReport = async () => {
-    const todayObj = new Date();
-    const today = todayObj.toLocaleDateString('fa-IR');
-    const todayValue = new Date(todayObj.getFullYear(), todayObj.getMonth(), todayObj.getDate()).getTime();
+  const saveReport = () => {
+    const today = new Date().toLocaleDateString('fa-IR');
     const existingIndex = reports.findIndex(r => r.date === today);
-
+    
     if (editingReportId) {
       const editIndex = reports.findIndex(r => r.id === editingReportId);
       if (editIndex !== -1) {
@@ -907,8 +702,7 @@ const App = () => {
         newReports[editIndex] = updatedReport;
         setReports(newReports);
         setEditingReportId(null);
-        const ok = await saveToFirestore(user.uid, state, newReports);
-        if (ok) alert('✅ گزارش با موفقیت ویرایش و ذخیره شد!');
+        alert('✅ گزارش با موفقیت ویرایش شد!');
         return;
       }
     }
@@ -919,7 +713,6 @@ const App = () => {
     const r = {
       id: Date.now(),
       date: today,
-      dateValue: todayValue,
       totalScore: total,
       sections: {
         scientific: { score: scientific.score, max: scientific.max },
@@ -935,24 +728,18 @@ const App = () => {
         note: state.note || ''
       }
     };
-    let newReports;
     if (existingIndex !== -1) {
-      newReports = [...reports];
+      const newReports = [...reports];
       newReports[existingIndex] = r;
+      setReports(newReports);
     } else {
-      newReports = sortReportsDesc([r, ...reports]);
+      setReports(p => [r, ...p]);
     }
-    setReports(newReports);
     setEditingReportId(null);
-    const ok = await saveToFirestore(user.uid, state, newReports);
-    if (ok) alert('✅ گزارش با موفقیت ذخیره شد.');
   };
 
-  const deleteReport = async (id, date) => {
-    if (!window.confirm(`حذف گزارش ${date}؟`)) return;
-    const newReports = reports.filter(r => r.id !== id);
-    setReports(newReports);
-    await saveToFirestore(user.uid, state, newReports);
+  const deleteReport = (id, date) => {
+    if (window.confirm(`حذف گزارش ${date}؟`)) setReports(p => p.filter(r => r.id !== id));
   };
 
   const editReport = (report) => {
@@ -968,71 +755,12 @@ const App = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const [codeModal, setCodeModal] = useState({ open: false, code: '', date: '' });
   const getReportCode = (report) => {
     const d = report.details;
     const tempState = { ...getDefaultState(), ...d, items: d.items || getDefaultState().items, sleepSlots: d.sleepSlots || [{ sleep: '23:00', wake: '07:00' }] };
     const code = generateCode(tempState);
-    setCodeModal({ open: true, code, date: report.date });
+    alert('📋 کد رمزی این گزارش:\n\n' + code);
     return code;
-  };
-
-  const [showImportModal, setShowImportModal] = useState(false);
-  const importReportFromCode = async (rawCode, dateStr) => {
-    let parsed;
-    try {
-      parsed = parseCode(rawCode);
-    } catch (err) {
-      alert('❌ کد رمزی نامعتبر است:\n' + err.message);
-      return false;
-    }
-    if (!dateStr) { alert('لطفاً تاریخ این گزارش را انتخاب کنید.'); return false; }
-    const dObj = new Date(dateStr + 'T00:00:00');
-    if (isNaN(dObj.getTime())) { alert('تاریخ نامعتبر است.'); return false; }
-    const dateFa = dObj.toLocaleDateString('fa-IR');
-    const dateValue = dObj.getTime();
-
-    const sci = calcSectionScore(parsed, parsed.items.scientific);
-    const tah = calcSectionScore(parsed, parsed.items.tahzib);
-    const bas = calcSectionScore(parsed, parsed.items.basirat);
-    const org = calcSectionScore(parsed, parsed.items.organization);
-    const totalScore = sci.score + tah.score + bas.score + org.score;
-
-    const existingIndex = reports.findIndex(r => r.date === dateFa);
-    if (existingIndex !== -1) {
-      if (!window.confirm(`برای تاریخ (${dateFa}) قبلاً گزارشی ثبت شده است. آیا می‌خواهید آن را با داده‌های این کد رمزی جایگزین کنید؟`)) return false;
-    }
-
-    const r = {
-      id: Date.now(),
-      date: dateFa,
-      dateValue,
-      totalScore,
-      sections: {
-        scientific: { score: sci.score, max: sci.max },
-        tahzib: { score: tah.score, max: tah.max },
-        basirat: { score: bas.score, max: bas.max },
-        organization: { score: org.score, max: org.max }
-      },
-      details: {
-        ...parsed,
-        adayeDin: { enabled: parsed.adayeDinOn, sobh: parsed.namazSobh, zohr: parsed.namazZohr, asr: parsed.namazAsr, maghreb: parsed.namazMaghreb, esha: parsed.namazEsha, rooze: parsed.rooze },
-        sleepSlots: parsed.sleepSlots,
-        items: parsed.items,
-        note: parsed.note || ''
-      }
-    };
-    let newReports;
-    if (existingIndex !== -1) {
-      newReports = [...reports];
-      newReports[existingIndex] = r;
-    } else {
-      newReports = sortReportsDesc([r, ...reports]);
-    }
-    setReports(newReports);
-    const ok = await saveToFirestore(user.uid, state, newReports);
-    if (ok) alert(`✅ گزارش تاریخ ${dateFa} با موفقیت وارد و ذخیره شد.\nامتیاز: ${totalScore}`);
-    return ok;
   };
 
   const [showAnalysis, setShowAnalysis] = useState(false);
@@ -1043,11 +771,11 @@ const App = () => {
     if (period === 'week') cutoff = now - 7 * 24 * 60 * 60 * 1000;
     else if (period === 'month') cutoff = now - 30 * 24 * 60 * 60 * 1000;
     else cutoff = 0;
-    return reports.filter(r => (r.dateValue || r.id) >= cutoff);
+    return reports.filter(r => r.id >= cutoff);
   }, [reports]);
 
   const filtered = getFiltered(filterPeriod);
-  const sorted = [...filtered].sort((a, b) => (a.dateValue || a.id) - (b.dateValue || b.id));
+  const sorted = [...filtered].sort((a, b) => a.id - b.id);
 
   const secPerc = sorted.map(r => ({
     date: r.date,
@@ -1128,6 +856,9 @@ const App = () => {
           component = <SliderItem key={item.id} label={item.label} min={item.min} max={item.max} step={item.step} val={sectionState[item.field] || 0} onChange={(e) => updateField(item.field, handler(e.target.value))} extra={item.extra || ''} nature={item.nature} />;
           break;
         }
+        case 'penaltyCounter':
+          component = <PenaltyCounter key={item.id} label={item.label} value={sectionState[item.field] !== undefined ? sectionState[item.field] : item.maxScore} maxScore={item.maxScore} onChange={(v) => updateField(item.field, v)} />;
+          break;
         case 'toggleWithSlider':
           component = (
             <div key={item.id} className="card" style={{ background: '#f1f5f9', padding: '12px', margin: '8px 0' }}>
@@ -1159,9 +890,6 @@ const App = () => {
     });
   }, [state, editMode, update, moveItem, deleteItem]);
 
-  // ============================================================
-  // خروج با تأیید
-  // ============================================================
   const handleSignOut = () => {
     if (window.confirm('آیا مطمئن هستید که می‌خواهید از حساب خود خارج شوید؟')) {
       auth.signOut();
@@ -1179,14 +907,6 @@ const App = () => {
         <div className="header-left">
           <h1>داشبورد خودسازی</h1>
           <span className="user-email">👤 {user.email}</span>
-          <span className="user-email" style={{
-            background: saveStatus === 'error' ? 'rgba(239,68,68,0.35)' : (saveStatus === 'saving' ? 'rgba(255,255,255,0.15)' : 'rgba(34,197,94,0.3)')
-          }}>
-            {saveStatus === 'saving' && '💾 در حال ذخیره...'}
-            {saveStatus === 'saved' && '✅ ذخیره شد'}
-            {saveStatus === 'error' && '⚠️ ذخیره ناموفق'}
-            {saveStatus === 'idle' && '—'}
-          </span>
         </div>
         <div className="score-wrap">
           <div className="score-num">{total}</div>
@@ -1234,12 +954,7 @@ const App = () => {
         </div>
         <div className="mt-4">
           <label style={{ fontWeight: 700, fontSize: '14px', display: 'block', marginBottom: '4px' }}>📝 یادداشت روزانه</label>
-          <textarea 
-            className="note-field" 
-            placeholder="هر نکته یا اتفاقی که امروز می‌خواهید ثبت کنید..." 
-            value={state.note || ''} 
-            onChange={(e) => update('note', e.target.value)} 
-          />
+          <textarea className="note-field" placeholder="هر نکته یا اتفاقی که امروز می‌خواهید ثبت کنید..." value={state.note || ''} onChange={(e) => update('note', e.target.value)} />
         </div>
       </Section>
 
@@ -1292,12 +1007,9 @@ const App = () => {
       )}
 
       <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', borderBottom: 'none' }}>
-          <h3 style={{ fontSize: '18px', fontWeight: 900, color: '#1e40af', borderRight: '4px solid #3b82f6', paddingRight: '12px' }}>📋 گزارش‌های قبلی</h3>
-          <button className="btn-sm" style={{ background: '#8b5cf6', color: '#fff' }} onClick={() => setShowImportModal(true)}>📥 وارد کردن با کد رمزی</button>
-        </div>
-        {sortedReports.length === 0 ? <div className="empty">هنوز گزارشی ذخیره نشده است.</div> : 
-          sortedReports.map(r => (
+        <h3 style={{ fontSize: '18px', fontWeight: 900, color: '#1e40af', borderRight: '4px solid #3b82f6', paddingRight: '12px' }}>📋 گزارش‌های قبلی</h3>
+        {reports.length === 0 ? <div className="empty">هنوز گزارشی ذخیره نشده است.</div> : 
+          reports.map(r => (
             <div key={r.id} className="report-card">
               <div className="report-header">
                 <div>
@@ -1324,8 +1036,6 @@ const App = () => {
       </div>
 
       <AddItemModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} onAdd={handleAddItem} />
-      <CodeModal isOpen={codeModal.open} code={codeModal.code} date={codeModal.date} onClose={() => setCodeModal({ open: false, code: '', date: '' })} />
-      <ImportCodeModal isOpen={showImportModal} onClose={() => setShowImportModal(false)} onImport={importReportFromCode} />
     </div>
   );
 };
